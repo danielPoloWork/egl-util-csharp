@@ -46,7 +46,7 @@ setup.
 
 | # | Title | Status |
 |---|---|---|
-| 1 | Project bootstrap & CI | ⏳ in progress |
+| 1 | Project bootstrap & CI | ✅ done |
 | 2 | DDD core building blocks | ⏳ planned |
 | 3 | Functional Result error model | ⏳ planned |
 | 4 | Persistence patterns | ⏳ planned |

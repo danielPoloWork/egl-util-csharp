@@ -13,15 +13,15 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 The thinnest slice that compiles, tests, and ships under the full quality bar.
 
-- [ ] 1.1 Lay down the build system (dotnet SDK (MSBuild), Directory.Build.props) and a buildable skeleton under
+- [x] 1.1 Lay down the build system (dotnet SDK (MSBuild), Directory.Build.props) and a buildable skeleton under
       `src/main/csharp/it/d4np/util/`.
-- [ ] 1.2 Wire the test framework (xUnit (+ FsCheck for property tests)) with one passing smoke test under
+- [x] 1.2 Wire the test framework (xUnit (+ FsCheck for property tests)) with one passing smoke test under
       `src/test/csharp/it/d4np/util/`.
-- [ ] 1.3 Add formatter + linter configs (dotnet format / CSharpier, Roslyn analyzers + .editorconfig (warnings as errors)) at the repo root.
-- [ ] 1.4 Stand up the CI matrix (Linux x64, Windows x64, macOS arm64 (.NET 8)) with build + test + format + lint.
-- [ ] 1.5 Seed the version constant (public const string Version = "X.Y.Z") in `Version.cs`.
-- [ ] 1.6 Add Directory.Build.props (net8.0, nullable enable, warnings-as-errors, deterministic build), global.json, and the .editorconfig analyzer ruleset
-- [ ] 1.7 Create the solution, the library project (It.D4np.Util) and the xUnit test project with a passing smoke test, and commit packages.lock.json
+- [x] 1.3 Add formatter + linter configs (dotnet format / CSharpier, Roslyn analyzers + .editorconfig (warnings as errors)) at the repo root.
+- [x] 1.4 Stand up the CI matrix (Linux x64, Windows x64, macOS arm64 (.NET 8)) with build + test + format + lint.
+- [x] 1.5 Seed the version constant (public const string Version = "X.Y.Z") in `Version.cs`.
+- [x] 1.6 Add Directory.Build.props (net8.0, nullable enable, warnings-as-errors, deterministic build), global.json, and the .editorconfig analyzer ruleset
+- [x] 1.7 Create the solution, the library project (It.D4np.Util) and the xUnit test project with a passing smoke test, and commit packages.lock.json
 
 ---
 

@@ -12,6 +12,10 @@
 *.a
 *.lib
 
+# .NET build artifacts
+[Bb]in/
+[Oo]bj/
+*.user
 # Dependency / package manager caches
 /node_modules/
 /.venv/
