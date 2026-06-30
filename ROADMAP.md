@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
-- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-06-30 — Milestone 3: functional Result/Error model](docs/journal/2026/06/2026-06-30-result-model.md).
+- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-06-30 — Milestone 4: persistence patterns](docs/journal/2026/06/2026-06-30-persistence-patterns.md).
 
 ---
 
@@ -52,11 +52,11 @@ Provide allocation-light, exception-free error handling.
 
 Repository, Specification, and Unit of Work isolating EF Core behind abstractions.
 
-- [ ] 4.1 Define IRepository<TEntity, TId> CRUD abstraction
-- [ ] 4.2 Define ISpecification<TEntity> (criteria, includes, ordering, paging)
-- [ ] 4.3 Implement SpecificationEvaluator over IQueryable and test on EF Core InMemory + SQLite
-- [ ] 4.4 Define IUnitOfWork (atomic SaveChangesAsync)
-- [ ] 4.5 Implement DbContextExtensions to extract and publish domain events around SaveChanges
+- [x] 4.1 Define IRepository<TEntity, TId> CRUD abstraction
+- [x] 4.2 Define ISpecification<TEntity> (criteria, includes, ordering, paging)
+- [x] 4.3 Implement SpecificationEvaluator over IQueryable and test on EF Core InMemory + SQLite
+- [x] 4.4 Define IUnitOfWork (atomic SaveChangesAsync)
+- [x] 4.5 Implement DbContextExtensions to extract and publish domain events around SaveChanges
 
 ---
 
@@ -110,8 +110,8 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | ⏳ |
-| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5, 3.1-3.4 | 🚧 |
+| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5, 3.1-3.4, 4.1-4.5 | 🚧 |
 | §3 | Non-functional requirements | 1.3, 1.4 | ⏳ |
-| §4 | Logical architecture | 1.1, 2.1-2.4, 3.1-3.4 | 🚧 |
-| §5 | Public interface | 1.2, 2.1-2.4, 3.1-3.4 | 🚧 |
-| §6 | Verification & test strategy | 1.2, 1.4, 2.5, 3.4 | 🚧 |
+| §4 | Logical architecture | 1.1, 2.1-2.4, 3.1-3.4, 4.1-4.5 | 🚧 |
+| §5 | Public interface | 1.2, 2.1-2.4, 3.1-3.4, 4.1-4.5 | 🚧 |
+| §6 | Verification & test strategy | 1.2, 1.4, 2.5, 3.4, 4.3 | 🚧 |

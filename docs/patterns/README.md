@@ -27,6 +27,9 @@ in `src/main/...`, ADR `Accepted`) · `Considered` · `Rejected` · `Superseded`
 | 2 | Domain-Driven Design building blocks | Implemented | Strongly-typed entities, value objects, aggregates, and domain events | [`Domain/`](../../src/main/csharp/it/d4np/util/Domain) | [ADR-0004](../adr/0004-adopt-ddd-tactical-building-blocks.md) |
 | 3 | Adapter | Implemented | Carry a domain event onto the MediatR notification contract | [`DomainEventNotification`](../../src/main/csharp/it/d4np/util/Application/DomainEventNotification.cs) | [ADR-0004](../adr/0004-adopt-ddd-tactical-building-blocks.md) |
 | 4 | Null Object | Implemented | Represent "no error" without null checks (`Error.None`) | [`Error`](../../src/main/csharp/it/d4np/util/Domain/Error.cs) | [ADR-0005](../adr/0005-place-result-error-in-domain.md) |
+| 5 | Repository | Implemented | Mediate between the domain and the data-mapping layer | [`IRepository`](../../src/main/csharp/it/d4np/util/Application/IRepository.cs) | [ADR-0006](../adr/0006-introduce-infrastructure-and-persistence-patterns.md) |
+| 6 | Specification | Implemented | Declarative, composable queries isolated from the data layer | [`Specification`](../../src/main/csharp/it/d4np/util/Application/Specification.cs) | [ADR-0006](../adr/0006-introduce-infrastructure-and-persistence-patterns.md) |
+| 7 | Unit of Work | Implemented | Commit a set of changes as one atomic transaction | [`IUnitOfWork`](../../src/main/csharp/it/d4np/util/Application/IUnitOfWork.cs) | [ADR-0006](../adr/0006-introduce-infrastructure-and-persistence-patterns.md) |
 
 ## Rejected
 

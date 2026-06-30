@@ -20,6 +20,10 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Functional Result error model (Milestone 3): `Result`, `Result<TValue>`, the immutable `Error`
   record (with `Error.None`), and `Result.Combine` — in the dependency-free `It.D4np.Util.Domain`
   assembly.
+- Persistence patterns (Milestone 4): `IRepository<TEntity, TId>`, `ISpecification<TEntity>` with a
+  `Specification<TEntity>` base, and `IUnitOfWork` in `It.D4np.Util.Application`; plus a new
+  `It.D4np.Util.Infrastructure` assembly (EF Core) providing `SpecificationEvaluator` and
+  `DbContextExtensions` (at-least-once domain-event dispatch).
 
 ### Changed
 

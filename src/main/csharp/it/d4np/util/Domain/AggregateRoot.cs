@@ -7,7 +7,7 @@ namespace It.D4np.Util.Domain;
 /// clears them.
 /// </summary>
 /// <typeparam name="TId">The strongly-typed aggregate identifier; must be non-nullable.</typeparam>
-public abstract class AggregateRoot<TId> : Entity<TId>
+public abstract class AggregateRoot<TId> : Entity<TId>, IHasDomainEvents
     where TId : notnull
 {
     private readonly List<IDomainEvent> _domainEvents = [];

@@ -21,3 +21,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0003](0003-adopt-layered-assembly-architecture.md) | Adopt a layered assembly architecture (Clean / Onion) | Accepted |
 | [0004](0004-adopt-ddd-tactical-building-blocks.md) | Adopt the DDD tactical building blocks | Accepted |
 | [0005](0005-place-result-error-in-domain.md) | Place the functional Result/Error model in the Domain assembly | Accepted |
+| [0006](0006-introduce-infrastructure-and-persistence-patterns.md) | Introduce the Infrastructure assembly and adopt the persistence patterns | Accepted |
