@@ -24,6 +24,9 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   `Specification<TEntity>` base, and `IUnitOfWork` in `It.D4np.Util.Application`; plus a new
   `It.D4np.Util.Infrastructure` assembly (EF Core) providing `SpecificationEvaluator` and
   `DbContextExtensions` (at-least-once domain-event dispatch).
+- In-memory eventing (Milestone 5): `IEventBroker` (async publish) and `IEventHandler<TEvent>` in
+  `It.D4np.Util.Application`; `EventBroker` — a `System.Threading.Channels` background consumer with
+  back-pressure, per-handler failure isolation, and a graceful drain — in `It.D4np.Util.Infrastructure`.
 
 ### Changed
 
