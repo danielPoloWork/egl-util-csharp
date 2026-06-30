@@ -50,7 +50,7 @@ setup.
 | 2 | DDD core building blocks | ✅ done |
 | 3 | Functional Result error model | ✅ done |
 | 4 | Persistence patterns | ✅ done |
-| 5 | In-memory eventing & messaging | ⏳ planned |
+| 5 | In-memory eventing & messaging | ✅ done |
 | 6 | Security & validation | ⏳ planned |
 | 7 | Caching & optimization | ⏳ planned |
 | 8 | Utilities, DI, and 1.0 hardening | ⏳ planned |

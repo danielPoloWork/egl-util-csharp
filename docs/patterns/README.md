@@ -30,6 +30,8 @@ in `src/main/...`, ADR `Accepted`) · `Considered` · `Rejected` · `Superseded`
 | 5 | Repository | Implemented | Mediate between the domain and the data-mapping layer | [`IRepository`](../../src/main/csharp/it/d4np/util/Application/IRepository.cs) | [ADR-0006](../adr/0006-introduce-infrastructure-and-persistence-patterns.md) |
 | 6 | Specification | Implemented | Declarative, composable queries isolated from the data layer | [`Specification`](../../src/main/csharp/it/d4np/util/Application/Specification.cs) | [ADR-0006](../adr/0006-introduce-infrastructure-and-persistence-patterns.md) |
 | 7 | Unit of Work | Implemented | Commit a set of changes as one atomic transaction | [`IUnitOfWork`](../../src/main/csharp/it/d4np/util/Application/IUnitOfWork.cs) | [ADR-0006](../adr/0006-introduce-infrastructure-and-persistence-patterns.md) |
+| 8 | Producer-Consumer | Implemented | Decouple publishers from a single consumer via a bounded channel | [`EventBroker`](../../src/main/csharp/it/d4np/util/Infrastructure/EventBroker.cs) | [ADR-0007](../adr/0007-adopt-in-memory-event-broker-on-channels.md) |
+| 9 | Publish-Subscribe | Implemented | Broadcast an event to all interested handlers | [`IEventBroker`](../../src/main/csharp/it/d4np/util/Application/IEventBroker.cs) | [ADR-0007](../adr/0007-adopt-in-memory-event-broker-on-channels.md) |
 
 ## Rejected
 
