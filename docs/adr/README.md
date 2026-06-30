@@ -18,3 +18,5 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 |-----|-------|--------|
 | [0001](0001-record-architecture-decisions.md) | Record architecture decisions | Accepted |
 | [0002](0002-adopt-cross-language-source-layout.md) | Adopt the cross-language source layout | Accepted |
+| [0003](0003-adopt-layered-assembly-architecture.md) | Adopt a layered assembly architecture (Clean / Onion) | Accepted |
+| [0004](0004-adopt-ddd-tactical-building-blocks.md) | Adopt the DDD tactical building blocks | Accepted |

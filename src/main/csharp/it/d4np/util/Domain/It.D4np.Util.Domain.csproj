@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>DDD domain building blocks for egl-util-csharp: entities, value objects, aggregate roots, and domain events. Zero third-party dependencies.</Description>
+  </PropertyGroup>
+
+</Project>
