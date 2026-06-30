@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
-- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: _none yet_.
+- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-06-30 — Milestone 2: DDD core](docs/journal/2026/06/2026-06-30-ddd-core.md).
 
 ---
 
@@ -29,11 +29,11 @@ The thinnest slice that compiles, tests, and ships under the full quality bar.
 
 Ship the strongly-typed domain primitives with proven equality semantics.
 
-- [ ] 2.1 Implement Entity<TId> with identity equality and a typed Id
-- [ ] 2.2 Implement ValueObject with structural equality, GetEqualityComponents, and hashing
-- [ ] 2.3 Implement AggregateRoot<TId> with the domain-event collection (RaiseDomainEvent/ClearDomainEvents)
-- [ ] 2.4 Define IDomainEvent (occurred-on via IDateTimeProvider) and DomainEventNotification<TEvent> (MediatR adapter)
-- [ ] 2.5 Property-test the equality laws and record the DDD building-block entries in the patterns catalogue
+- [x] 2.1 Implement Entity<TId> with identity equality and a typed Id
+- [x] 2.2 Implement ValueObject with structural equality, GetEqualityComponents, and hashing
+- [x] 2.3 Implement AggregateRoot<TId> with the domain-event collection (RaiseDomainEvent/ClearDomainEvents)
+- [x] 2.4 Define IDomainEvent (occurred-on via IDateTimeProvider) and DomainEventNotification<TEvent> (MediatR adapter)
+- [x] 2.5 Property-test the equality laws and record the DDD building-block entries in the patterns catalogue
 
 ---
 
@@ -110,8 +110,8 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | ⏳ |
-| §2 | Functional requirements | 1.1, 1.2 | ⏳ |
+| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5 | 🚧 |
 | §3 | Non-functional requirements | 1.3, 1.4 | ⏳ |
-| §4 | Logical architecture | 1.1 | ⏳ |
-| §5 | Public interface | 1.2 | ⏳ |
-| §6 | Verification & test strategy | 1.2, 1.4 | ⏳ |
+| §4 | Logical architecture | 1.1, 2.1-2.4 | 🚧 |
+| §5 | Public interface | 1.2, 2.1-2.4 | 🚧 |
+| §6 | Verification & test strategy | 1.2, 1.4, 2.5 | 🚧 |

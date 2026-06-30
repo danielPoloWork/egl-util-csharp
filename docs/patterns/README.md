@@ -21,12 +21,11 @@ in `src/main/...`, ADR `Accepted`) · `Considered` · `Rejected` · `Superseded`
 
 ## Adopted / Planned
 
-_No patterns adopted yet. Each adoption lands with its ADR and a code location in the same
-PR._
-
 | # | Pattern | Status | Problem it addresses | Code location | ADR / PR |
 |---|---------|--------|----------------------|---------------|----------|
-| — | —       | —      | —                    | —             | —        |
+| 1 | Clean / Onion | Implemented | Keep the domain dependency-free; dependencies point inward toward it | [`Domain/`](../../src/main/csharp/it/d4np/util/Domain) | [ADR-0003](../adr/0003-adopt-layered-assembly-architecture.md) |
+| 2 | Domain-Driven Design building blocks | Implemented | Strongly-typed entities, value objects, aggregates, and domain events | [`Domain/`](../../src/main/csharp/it/d4np/util/Domain) | [ADR-0004](../adr/0004-adopt-ddd-tactical-building-blocks.md) |
+| 3 | Adapter | Implemented | Carry a domain event onto the MediatR notification contract | [`DomainEventNotification`](../../src/main/csharp/it/d4np/util/Application/DomainEventNotification.cs) | [ADR-0004](../adr/0004-adopt-ddd-tactical-building-blocks.md) |
 
 ## Rejected
 

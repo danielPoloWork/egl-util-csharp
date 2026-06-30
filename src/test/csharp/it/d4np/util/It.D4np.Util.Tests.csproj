@@ -14,6 +14,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="FsCheck.Xunit" Version="2.16.6" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
@@ -24,7 +25,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\main\csharp\it\d4np\util\It.D4np.Util.csproj" />
+    <ProjectReference Include="..\..\..\..\..\main\csharp\it\d4np\util\Domain\It.D4np.Util.Domain.csproj" />
+    <ProjectReference Include="..\..\..\..\..\main\csharp\it\d4np\util\Application\It.D4np.Util.Application.csproj" />
   </ItemGroup>
 
 </Project>

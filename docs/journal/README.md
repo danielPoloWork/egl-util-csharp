@@ -13,8 +13,8 @@ At the close of a state-changing session, the agent:
 
 ## Index
 
-_No checkpoints yet._
-
 ### 2026
 
 _(newest first)_
+
+- [2026-06-30 — Milestone 2: DDD core building blocks](2026/06/2026-06-30-ddd-core.md)
