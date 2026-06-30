@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
-- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-06-30 — Milestone 2: DDD core](docs/journal/2026/06/2026-06-30-ddd-core.md).
+- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-06-30 — Milestone 3: functional Result/Error model](docs/journal/2026/06/2026-06-30-result-model.md).
 
 ---
 
@@ -41,10 +41,10 @@ Ship the strongly-typed domain primitives with proven equality semantics.
 
 Provide allocation-light, exception-free error handling.
 
-- [ ] 3.1 Implement Result (IsSuccess/IsFailure, Success/Failure factories)
-- [ ] 3.2 Implement Result<TValue> with guarded Value and implicit conversions
-- [ ] 3.3 Implement the immutable Error record with Error.None
-- [ ] 3.4 Implement Result.Combine over many results and property-test identity/associativity
+- [x] 3.1 Implement Result (IsSuccess/IsFailure, Success/Failure factories)
+- [x] 3.2 Implement Result<TValue> with guarded Value and implicit conversions
+- [x] 3.3 Implement the immutable Error record with Error.None
+- [x] 3.4 Implement Result.Combine over many results and property-test identity/associativity
 
 ---
 
@@ -110,8 +110,8 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | ⏳ |
-| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5 | 🚧 |
+| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5, 3.1-3.4 | 🚧 |
 | §3 | Non-functional requirements | 1.3, 1.4 | ⏳ |
-| §4 | Logical architecture | 1.1, 2.1-2.4 | 🚧 |
-| §5 | Public interface | 1.2, 2.1-2.4 | 🚧 |
-| §6 | Verification & test strategy | 1.2, 1.4, 2.5 | 🚧 |
+| §4 | Logical architecture | 1.1, 2.1-2.4, 3.1-3.4 | 🚧 |
+| §5 | Public interface | 1.2, 2.1-2.4, 3.1-3.4 | 🚧 |
+| §6 | Verification & test strategy | 1.2, 1.4, 2.5, 3.4 | 🚧 |

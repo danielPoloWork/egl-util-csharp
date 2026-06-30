@@ -48,7 +48,7 @@ setup.
 |---|---|---|
 | 1 | Project bootstrap & CI | ✅ done |
 | 2 | DDD core building blocks | ✅ done |
-| 3 | Functional Result error model | ⏳ planned |
+| 3 | Functional Result error model | ✅ done |
 | 4 | Persistence patterns | ⏳ planned |
 | 5 | In-memory eventing & messaging | ⏳ planned |
 | 6 | Security & validation | ⏳ planned |

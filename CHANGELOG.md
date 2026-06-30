@@ -17,6 +17,9 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - DDD core building blocks (Milestone 2): `Entity<TId>`, `ValueObject`, `AggregateRoot<TId>`,
   `IDomainEvent`, and `DomainEventNotification<TEvent>` — split into the dependency-free
   `It.D4np.Util.Domain` assembly and the `It.D4np.Util.Application` assembly (MediatR).
+- Functional Result error model (Milestone 3): `Result`, `Result<TValue>`, the immutable `Error`
+  record (with `Error.None`), and `Result.Combine` — in the dependency-free `It.D4np.Util.Domain`
+  assembly.
 
 ### Changed
 
