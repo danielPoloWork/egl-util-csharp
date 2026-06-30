@@ -1,0 +1,21 @@
+<Project>
+
+  <!--
+    Shared build governance for egl-util-csharp (EADOS Milestone 1).
+    Applies to every project in the solution. Per the spec's non-functional requirements:
+    nullable reference types on and treated as errors, Roslyn analyzers enabled, deterministic
+    builds, and a committed NuGet lockfile.
+  -->
+  <PropertyGroup>
+    <LangVersion>12</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>
