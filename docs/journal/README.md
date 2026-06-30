@@ -17,4 +17,5 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-06-30 — Milestone 3: functional Result/Error model](2026/06/2026-06-30-result-model.md)
 - [2026-06-30 — Milestone 2: DDD core building blocks](2026/06/2026-06-30-ddd-core.md)
