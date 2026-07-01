@@ -523,6 +523,18 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
+      "It.D4np.Util": {
+        "type": "Project",
+        "dependencies": {
+          "FluentValidation": "[11.11.0, )",
+          "MediatR": "[12.5.0, )",
+          "Microsoft.EntityFrameworkCore": "[8.0.28, )",
+          "Microsoft.Extensions.Caching.Abstractions": "[8.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[8.0.2, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[8.0.1, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[8.0.2, )"
+        }
+      },
       "it.d4np.util.application": {
         "type": "Project",
         "dependencies": {
@@ -533,18 +545,6 @@
       },
       "it.d4np.util.domain": {
         "type": "Project"
-      },
-      "it.d4np.util.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "It.D4np.Util.Application": "[1.0.0, )",
-          "It.D4np.Util.Domain": "[1.0.0, )",
-          "Microsoft.EntityFrameworkCore": "[8.0.28, )",
-          "Microsoft.Extensions.Caching.Abstractions": "[8.0.0, )",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "[8.0.2, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[8.0.1, )",
-          "Microsoft.Extensions.Logging.Abstractions": "[8.0.2, )"
-        }
       }
     }
   }

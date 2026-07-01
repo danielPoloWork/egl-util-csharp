@@ -53,8 +53,8 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 Clean / Onion architecture: dependencies point inward toward the domain. The package is organised into three layers, separated by namespace under `It.D4np.Util`:
 
 - Domain (`It.D4np.Util.Domain`) — Entity<TId>, ValueObject, AggregateRoot<TId>, IDomainEvent, and the functional Result/Result<T>/Error model. Zero external dependencies.
-- Application (`It.D4np.Util.Application`) — ISpecification<T>, IRepository<TEntity,TId>, IUnitOfWork, IEventBroker, ICacheService, IDateTimeProvider, DomainEventNotification<TEvent>, IPasswordHasher, ValidationPipelineBehavior. Depends on Domain plus the MediatR / FluentValidation abstractions.
-- Infrastructure (`It.D4np.Util.Infrastructure`) — SpecificationEvaluator (EF Core), EventBroker (Channels), PasswordHasher (PBKDF2), CacheService (two-level in-memory + distributed), DistributedCacheExtensions (Redis/JSON), DbContextExtensions, ServiceCollectionExtensions. Depends on Application plus concrete tech.
+- Application (`It.D4np.Util.Application`) — ISpecification<T>, IRepository<TEntity,TId>, IUnitOfWork, IEventBroker, ICacheService, IDateTimeProvider, DomainEventNotification<TEvent>, IPasswordHasher, ValidationPipelineBehavior, PaginatedList<T>. Depends on Domain plus the MediatR / FluentValidation abstractions.
+- Infrastructure (`It.D4np.Util.Infrastructure`) — SpecificationEvaluator (EF Core), EventBroker (Channels), PasswordHasher (PBKDF2), CacheService (two-level in-memory + distributed), DistributedCacheExtensions (Redis/JSON), DbContextExtensions, DateTimeProvider, ServiceCollectionExtensions. Depends on Application plus concrete tech.
 
 Dependency direction and the domain-event flow:
 

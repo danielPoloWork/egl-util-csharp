@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
-- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-07-01 — Milestone 7: caching & optimization](docs/journal/2026/07/2026-07-01-caching.md).
+- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-07-01 — Milestone 8: utilities, DI, and 1.0 hardening](docs/journal/2026/07/2026-07-01-utilities-di.md).
 
 ---
 
@@ -94,9 +94,9 @@ Two-level caching with a compact distributed serialization format.
 
 Finish the utilities, freeze the API, package to NuGet, and cut v1.0.0.
 
-- [ ] 8.1 Implement IDateTimeProvider/DateTimeProvider and PaginatedList<T>
-- [ ] 8.2 Implement ServiceCollectionExtensions assembly-scanning auto-registration
-- [ ] 8.3 Freeze the public API, record the API-stability ADR, and reach >= 80% coverage
+- [x] 8.1 Implement IDateTimeProvider/DateTimeProvider and PaginatedList<T>
+- [x] 8.2 Implement ServiceCollectionExtensions assembly-scanning auto-registration
+- [x] 8.3 Freeze the public API, record the API-stability ADR, and reach >= 80% coverage
 - [ ] 8.4 Configure NuGet packaging (symbols, README, SemVer) and cut v1.0.0 via the release workflow
 
 ---
@@ -110,8 +110,8 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | ⏳ |
-| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.3, 7.1-7.2 | 🚧 |
-| §3 | Non-functional requirements | 1.3, 1.4, 5.2, 5.3, 6.1 | 🚧 |
-| §4 | Logical architecture | 1.1, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.2, 7.1-7.2 | 🚧 |
-| §5 | Public interface | 1.2, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.2, 7.1-7.2 | 🚧 |
-| §6 | Verification & test strategy | 1.2, 1.4, 2.5, 3.4, 4.3, 5.3, 6.3, 7.3 | 🚧 |
+| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.3, 7.1-7.2, 8.1-8.2 | 🚧 |
+| §3 | Non-functional requirements | 1.3, 1.4, 5.2, 5.3, 6.1, 8.3 | 🚧 |
+| §4 | Logical architecture | 1.1, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.2, 7.1-7.2, 8.1-8.2 | 🚧 |
+| §5 | Public interface | 1.2, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.2, 7.1-7.2, 8.1-8.2 | 🚧 |
+| §6 | Verification & test strategy | 1.2, 1.4, 2.5, 3.4, 4.3, 5.3, 6.3, 7.3, 8.3 | 🚧 |

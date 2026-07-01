@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Bundled into the single It.D4np.Util package via the Infrastructure project; not published on its own. -->
+    <IsPackable>false</IsPackable>
     <Description>DDD domain building blocks for egl-util-csharp: entities, value objects, aggregate roots, and domain events. Zero third-party dependencies.</Description>
   </PropertyGroup>
 

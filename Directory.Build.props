@@ -7,6 +7,8 @@
     builds, and a committed NuGet lockfile.
   -->
   <PropertyGroup>
+    <!-- Absolute path to the repository root (this file's directory), for paths like the packaged README. -->
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
     <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

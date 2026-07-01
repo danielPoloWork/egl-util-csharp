@@ -11,8 +11,8 @@ internally congruent after any change. Run from anywhere in the repo:
 It exits non-zero with an actionable report when a congruence invariant is violated. The
 contract (the "congruence checks"):
 
-  1. version-lockstep — the version constant, the README `Status-vX.Y.Z` badge, and the
-     latest released changelog/release file (if any) agree;
+  1. version-lockstep — the version constant, the README `Status-vX.Y.Z` badge, the packable
+     project's <Version>, and the latest released changelog/release file (if any) agree;
   2. adr-index       — every docs/adr/NNNN-*.md is indexed and every indexed ADR exists,
      with sequential numbering and no gap;
   3. patterns        — every Adopted catalogue row cites an existing ADR and an existing
@@ -47,6 +47,9 @@ CONFIG = {
     "version_file": "src/main/csharp/it/d4np/util/Domain/Version.cs",
     # A regex with a single (\d+\.\d+\.\d+) group that extracts the version from that file.
     "version_regex": r"(\d+\.\d+\.\d+)",
+    # The packable project manifest whose <Version> must match the source version, or None if the
+    # project is not packaged (or does not pin a version). Checked by version-lockstep.
+    "package_version_file": "src/main/csharp/it/d4np/util/Infrastructure/It.D4np.Util.Infrastructure.csproj",
     # The source root that pattern code-locations must live under.
     "src_main": "src/main/csharp/it/d4np/util",
     # Whether documentation i18n is enabled (gates check 7).
@@ -109,6 +112,16 @@ def check_version_lockstep():
         source = vm.group(1)
         if badge != source:
             fail(name, f"README badge v{badge} != version file {vf} ({source})")
+
+    # Packable project manifest <Version> (if configured) must match the source version.
+    pvf = CONFIG.get("package_version_file")
+    if pvf and exists(pvf):
+        ptext = read(*pvf.split("/"))
+        pm = re.search(r"<Version>(\d+\.\d+\.\d+)</Version>", ptext)
+        if pm is None:
+            fail(name, f"could not parse a <Version> from {pvf}")
+        elif pm.group(1) != source:
+            fail(name, f"package <Version> in {pvf} ({pm.group(1)}) != source version {source}")
 
     # Latest released changelog file (per-version split), if any exist.
     cl_dir = os.path.join(ROOT, "docs", "changelog")

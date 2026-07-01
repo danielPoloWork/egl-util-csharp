@@ -1,11 +1,20 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    This is the single packable project. The It.D4np.Util NuGet package bundles the Domain and
+    Application assemblies (below, via PrivateAssets=all + the IncludeReferencedProjectsInPackage
+    target) alongside Infrastructure, so consumers get all three layers from one package. Every
+    third-party dependency of all three layers is declared directly here, so the package's dependency
+    list is complete even though the referenced projects flow no transitive package assets.
+  -->
   <ItemGroup>
-    <ProjectReference Include="..\Application\It.D4np.Util.Application.csproj" />
-    <ProjectReference Include="..\Domain\It.D4np.Util.Domain.csproj" />
+    <ProjectReference Include="..\Application\It.D4np.Util.Application.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Domain\It.D4np.Util.Domain.csproj" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="MediatR" Version="12.5.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.28" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
@@ -18,7 +27,44 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Description>Infrastructure building blocks for egl-util-csharp: EF Core specification evaluation, domain-event dispatch around SaveChanges, PBKDF2 password hashing, and a two-level cache over IMemoryCache/IDistributedCache.</Description>
+    <Description>Infrastructure building blocks for egl-util-csharp: EF Core specification evaluation, domain-event dispatch around SaveChanges, PBKDF2 password hashing, a two-level cache over IMemoryCache/IDistributedCache, the system-clock provider, and DI auto-registration.</Description>
   </PropertyGroup>
+
+  <!-- NuGet package metadata for the single It.D4np.Util package. Version is kept in lockstep with
+       Version.cs and the README badge (bumped in the release PR). -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>It.D4np.Util</PackageId>
+    <Version>0.0.0</Version>
+    <Authors>Daniel Polo</Authors>
+    <Product>egl-util-csharp</Product>
+    <PackageDescription>Strongly-typed DDD, Clean Architecture, CQRS and functional Result building blocks for .NET 8: entities, value objects, aggregates, the Result/Error model, repository/specification/unit-of-work, an in-memory event broker, PBKDF2 password hashing, FluentValidation pipeline behavior, and a two-level cache.</PackageDescription>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2026 Daniel Polo</Copyright>
+    <PackageProjectUrl>https://github.com/danielPoloWork/egl-util-csharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/danielPoloWork/egl-util-csharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>ddd;clean-architecture;cqrs;result;repository;specification;mediator;validation;caching;dotnet</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeReferencedProjectsInPackage</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(RepoRoot)README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- Bundle the (PrivateAssets=all) referenced project outputs — Domain and Application, plus their
+       XML docs — into the package's lib folder alongside Infrastructure. -->
+  <Target Name="IncludeReferencedProjectsInPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <_ReferencedProjectDll Include="@(ReferenceCopyLocalPaths)"
+                             Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference' And '%(Extension)' == '.dll'" />
+      <BuildOutputInPackage Include="@(_ReferencedProjectDll)" />
+      <BuildOutputInPackage Include="@(_ReferencedProjectDll->'%(RootDir)%(Directory)%(Filename).xml')"
+                            Condition="Exists('%(RootDir)%(Directory)%(Filename).xml')" />
+    </ItemGroup>
+  </Target>
 
 </Project>
