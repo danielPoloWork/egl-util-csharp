@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Substantial features become a `ROADMAP.md` item (and usually an ADR) before code.
+        Substantial features become a `docs/ROADMAP.md` item (and usually an ADR) before code.
         Describe the problem first; the solution is a proposal, not a decision.
   - type: textarea
     id: problem

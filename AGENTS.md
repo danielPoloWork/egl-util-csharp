@@ -35,9 +35,9 @@ descriptions. The maintainer may converse in another language; conversational re
 match that language, but anything that lands on disk or in Git is English-only.
 
 **Exception — translated user-facing docs.** Per [ADR-0011](docs/adr/0011-adopt-documentation-i18n-zh-ja.md),
-translations of user-facing documentation are allowed (e.g. `README.zh-CN.md`, `README.ja.md` at the repo
-root, beside `README.md`), indexed under [`docs/i18n/`](docs/i18n/). **English remains the source of
-truth**; translations are derived and are tracked for freshness by the `i18n-freshness` check in
+translations of user-facing documentation are allowed under `docs/i18n/<lang>/` (e.g.
+`docs/i18n/zh/README.md`, `docs/i18n/jp/README.md`), indexed by [`docs/i18n/`](docs/i18n/). **English
+remains the source of truth**; translations are derived and are tracked for freshness by the `i18n-freshness` check in
 `tools/consistency_lint.py`. This exception covers *only* those translated docs — code, identifiers,
 ADRs, specs, commits, branches, and PR text stay English.
 
@@ -47,7 +47,7 @@ ADRs, specs, commits, branches, and PR text stay English.
 is **Strongly-typed DDD, Clean Architecture, CQRS and functional Result building blocks for .NET 8**.
 
 The full specification is in [`docs/specs/01_spec_util.md`](docs/specs/01_spec_util.md).
-The current plan and progress live in [`ROADMAP.md`](ROADMAP.md).
+The current plan and progress live in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## 4. Repository Layout
 
@@ -56,19 +56,20 @@ The current plan and progress live in [`ROADMAP.md`](ROADMAP.md).
 ├── AGENTS.md                       # this file — cross-tool agent instructions
 ├── CLAUDE.md                       # Claude Code adapter → defers to AGENTS.md
 ├── GEMINI.md                       # Gemini Antigravity adapter → defers to AGENTS.md
-├── README.md                       # human-facing project landing page
-├── ROADMAP.md                      # numbered checkbox roadmap, updated as work completes
+├── README.md                       # human-facing project landing page (English)
 ├── LICENSE
 ├── src/                            # all source code lives here — see §5
 │   ├── main/csharp/it/d4np/util/
 │   ├── test/csharp/it/d4np/util/
 │   └── bench/csharp/it/d4np/util/    # where applicable
 ├── docs/
+│   ├── ROADMAP.md                  # numbered checkbox roadmap, updated as work completes
 │   ├── adr/                        # Architecture Decision Records
 │   ├── patterns/                   # design-patterns catalogue + taxonomy
 │   ├── specs/                      # functional/technical specifications
 │   ├── workflow/                   # git, documentation, release & maintenance conventions
 │   ├── journal/                    # dated session checkpoints
+│   ├── i18n/                       # translated docs (zh/, jp/) + freshness manifest
 │   └── bugs/                       # in-repo bug ledger
 ├── tools/consistency_lint.py       # agent-runnable cross-artifact congruence checker
 └── .github/                        # CI + release workflows, PR/issue templates, CODEOWNERS, Dependabot
@@ -113,7 +114,7 @@ first superseding [ADR-0002](docs/adr/0002-adopt-cross-language-source-layout.md
 Agents **never merge**, **never force-push `main`**, and **never push directly
 to `main`**. When unsure, push the branch and ask.
 
-**One roadmap item per PR — and one PR at a time.** Every `ROADMAP.md` item ships in its own
+**One roadmap item per PR — and one PR at a time.** Every `docs/ROADMAP.md` item ships in its own
 standalone PR, branched from the `main` commit current when the work starts.
 After pushing the branch and drafting the PR, the agent **stops and waits for the maintainer
 to merge it** before starting the next item. No stacked PRs (the repository squash-merges).
@@ -238,7 +239,7 @@ Every PR must clear, at minimum:
 | Congruence | `python tools/consistency_lint.py` passes |
 
 Shortcuts ("just disable the warning", "tests next PR", "docs follow-up") are not allowed.
-If something is genuinely out of scope, file it as a new `ROADMAP.md` item in the same PR.
+If something is genuinely out of scope, file it as a new `docs/ROADMAP.md` item in the same PR.
 
 ## 11. Versioning & Release
 

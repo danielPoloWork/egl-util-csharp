@@ -23,8 +23,10 @@ contract (the "congruence checks"):
   6. bugs            — every docs/bugs/ record has valid frontmatter, its filename/path
      agrees with its id/discovered date, ids are unique and non-gapped, the index ↔ files
      bijection holds, and a `fixed` record names its `fixed-in`;
-  7. i18n-freshness  — (only when i18n is enabled) no translated page is staler than its
-     English source.
+  7. i18n-freshness  — (only when i18n is enabled) each translated page records a content
+     digest of its English source; the check fails if the source's current digest differs
+     (the source changed and the translation was not re-synced). Content-based, so it is
+     stable across the repository's squash-merge.
 
 Each check is independent; all run, then the report lists every failure. The checks are
 designed to PASS on a freshly-generated repository (empty catalogues, no releases yet).
@@ -32,6 +34,7 @@ designed to PASS on a freshly-generated repository (empty catalogues, no release
 Generated configuration is in the CONFIG block below — EADOS fills it from project.yaml.
 """
 
+import hashlib
 import os
 import re
 import subprocess
@@ -212,10 +215,10 @@ def check_patterns():
 # ---------------------------------------------------------------------------
 def check_spec_map():
     name = "spec-map"
-    roadmap = read("ROADMAP.md")
+    roadmap = read("docs", "ROADMAP.md")
     block = re.search(r"## Spec Coverage Map.*?(?=\n## |\Z)", roadmap, re.DOTALL)
     if block is None:
-        fail(name, "no '## Spec Coverage Map' section in ROADMAP.md")
+        fail(name, "no '## Spec Coverage Map' section in docs/ROADMAP.md")
         return
     glyphs = {"⏳", "🚧", "✅", "❎"}
     seen = 0
@@ -242,7 +245,7 @@ def check_spec_map():
 def check_milestones():
     name = "milestones"
     readme = read("README.md")
-    roadmap = read("ROADMAP.md")
+    roadmap = read("docs", "ROADMAP.md")
     readme_status = {}
     for m in re.finditer(r"^\|\s*(\d+)\s*\|[^|]+\|\s*([^|]+?)\s*\|$", readme, re.MULTILINE):
         readme_status[int(m.group(1))] = "✅" in m.group(2)
@@ -362,18 +365,21 @@ def check_i18n_freshness():
         if "`translated`" not in line:
             continue
         link = re.search(r"\]\(([^)]+)\)", line)
-        sha = re.search(r"\|\s*`([0-9a-f]{7,40})`\s*\|", line)
-        if link is None or sha is None:
+        digest = re.search(r"\|\s*`([0-9a-f]{8,64})`\s*\|", line)
+        if link is None or digest is None:
             fail(name, f"could not parse translated manifest row: {line.strip()}")
             continue
         src = os.path.normpath(os.path.join(i18n_dir, link.group(1)))
         rel = os.path.relpath(src, ROOT).replace(os.sep, "/")
-        newer = git("log", "--oneline", f"{sha.group(1)}..HEAD", "--", rel)
-        if newer is None:
-            fail(name, f"git unavailable or commit {sha.group(1)} not in history for {rel}")
-        elif newer:
-            fail(name, f"i18n translation of {rel} is STALE ({len(newer.splitlines())} "
-                       "commit(s) after the recorded source commit)")
+        if not os.path.exists(src):
+            fail(name, f"i18n source '{rel}' referenced by the manifest does not exist")
+            continue
+        with open(src, "rb") as handle:
+            actual = hashlib.sha256(handle.read()).hexdigest()
+        recorded = digest.group(1)
+        if actual[: len(recorded)] != recorded:
+            fail(name, f"i18n translation of {rel} is STALE (recorded source digest {recorded}, "
+                       f"current {actual[: len(recorded)]}) — re-sync the translation and update the digest")
 
 
 CHECKS = [

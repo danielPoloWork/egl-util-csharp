@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-07-01 — documentation i18n (zh, ja)](docs/journal/2026/07/2026-07-01-i18n-zh-ja.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-01 — documentation i18n (zh, jp)](journal/2026/07/2026-07-01-i18n-zh-ja.md).
 
 ---
 
@@ -101,14 +101,15 @@ Finish the utilities, freeze the API, package to NuGet, and cut v1.0.0.
 
 ---
 
-## Milestone 9 — Documentation i18n
+## Milestone 9 — Documentation i18n & README polish
 
-Post-1.0 documentation work: translate the front-door docs, keeping English the source of truth.
-Not reflected in the README milestone table, which is intentionally left untouched so the
-`i18n-freshness` check's source anchor stays stable (ADR-0011).
+Post-1.0 documentation work: translate the front-door docs (English stays the source of truth) and
+bring the README to an enterprise polish. The README milestone table above tracks the product
+milestones (1–8); this docs-infra milestone is tracked here only.
 
-- [x] 9.1 Enable the `i18n-freshness` lint and add the `docs/i18n/` index + translation-status manifest (ADR-0011)
-- [x] 9.2 Translate the README into Simplified Chinese (`README.zh-CN.md`) and Japanese (`README.ja.md`)
+- [x] 9.1 Enable the content-digest `i18n-freshness` lint and add the `docs/i18n/` index + translation-status manifest (ADR-0011)
+- [x] 9.2 Translate the README into Simplified Chinese (`docs/i18n/zh/README.md`) and Japanese (`docs/i18n/jp/README.md`)
+- [x] 9.3 Enterprise README polish: NuGet version/downloads/CI/.NET/License badge row, quick-start, and a translations switcher
 
 ---
 

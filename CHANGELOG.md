@@ -12,9 +12,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
-- Documentation i18n (Milestone 9): the README translated into Simplified Chinese (`README.zh-CN.md`)
-  and Japanese (`README.ja.md`), with a `docs/i18n/` index and a freshness-tracked translation manifest
-  (English remains the source of truth; ADR-0011). Docs only — the shipped package is unchanged.
+- Documentation i18n & README polish (Milestone 9): the README translated into Simplified Chinese
+  (`docs/i18n/zh/README.md`) and Japanese (`docs/i18n/jp/README.md`), with a `docs/i18n/` index and a content-digest
+  freshness manifest (English remains the source of truth; ADR-0011); plus an enterprise README refresh
+  — a NuGet version/downloads/CI/.NET/License badge row, a quick-start, and a translations switcher. The
+  `i18n-freshness` lint is now content-digest based (squash-merge-safe). Docs only — the shipped package
+  is unchanged.
 
 ### Changed
 

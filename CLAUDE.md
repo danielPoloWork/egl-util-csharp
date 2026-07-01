@@ -17,7 +17,7 @@ is the source of truth.**
   merges PRs manually.** One roadmap item per PR, **one PR at a time — wait for the merge
   before starting the next item; no stacked PRs.** Conventional Commits, branch
   `<type>/<short-kebab>`. See §6.
-- **Docs:** every PR keeps `README.md`, `ROADMAP.md`, `docs/adr/`, and `docs/patterns/` in
+- **Docs:** every PR keeps `README.md`, `docs/ROADMAP.md`, `docs/adr/`, and `docs/patterns/` in
   sync. Non-trivial design choices need an ADR. See §7.
 - **Design patterns:** apply classical patterns where they fit; every adoption justified in
   an ADR + catalogued. Never force-fit. See §8.

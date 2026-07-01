@@ -12,7 +12,7 @@ deliverable — every PR ships its own doc updates in the same PR. The rules are
 | `docs/specs/` | behavior diverges from the frozen spec (update spec **or** add a superseding ADR) |
 | `docs/adr/` | a non-trivial design decision is made, or a pattern is adopted/superseded |
 | `docs/patterns/README.md` | a pattern is introduced, refined, rejected, or superseded |
-| `ROADMAP.md` | an item completes (flip the checkbox) or new work is planned |
+| `docs/ROADMAP.md` | an item completes (flip the checkbox) or new work is planned |
 | `CHANGELOG.md` | a user-visible change lands (add a line to `[Unreleased]`) |
 | `docs/journal/` | a work session changed the project's state (dated checkpoint) |
 | `docs/bugs/` | a defect is verified, triaged, or fixed |
