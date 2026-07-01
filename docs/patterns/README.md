@@ -34,6 +34,7 @@ in `src/main/...`, ADR `Accepted`) · `Considered` · `Rejected` · `Superseded`
 | 9 | Publish-Subscribe | Implemented | Broadcast an event to all interested handlers | [`IEventBroker`](../../src/main/csharp/it/d4np/util/Application/IEventBroker.cs) | [ADR-0007](../adr/0007-adopt-in-memory-event-broker-on-channels.md) |
 | 10 | Strategy | Implemented | Encapsulate an interchangeable password-hashing algorithm behind a stable interface | [`IPasswordHasher`](../../src/main/csharp/it/d4np/util/Application/IPasswordHasher.cs) | [ADR-0008](../adr/0008-adopt-secure-password-hashing-and-validation-behavior.md) |
 | 11 | Chain of Responsibility | Implemented | Run cross-cutting validation as a link in the MediatR request pipeline | [`ValidationPipelineBehavior`](../../src/main/csharp/it/d4np/util/Application/ValidationPipelineBehavior.cs) | [ADR-0008](../adr/0008-adopt-secure-password-hashing-and-validation-behavior.md) |
+| 12 | Proxy | Implemented | Serve values from a fast cache in front of the origin (two-level cache-aside) | [`CacheService`](../../src/main/csharp/it/d4np/util/Infrastructure/CacheService.cs) | [ADR-0009](../adr/0009-adopt-two-level-cache-and-distributed-serialization.md) |
 
 ## Rejected
 

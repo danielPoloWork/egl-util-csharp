@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.28" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
@@ -17,7 +18,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Description>Infrastructure building blocks for egl-util-csharp: EF Core specification evaluation and domain-event dispatch around SaveChanges.</Description>
+    <Description>Infrastructure building blocks for egl-util-csharp: EF Core specification evaluation, domain-event dispatch around SaveChanges, PBKDF2 password hashing, and a two-level cache over IMemoryCache/IDistributedCache.</Description>
   </PropertyGroup>
 
 </Project>

@@ -17,6 +17,8 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-01 — Milestone 7: caching & optimization](2026/07/2026-07-01-caching.md)
+- [2026-06-30 — Milestone 6: security & validation](2026/06/2026-06-30-security-validation.md)
 - [2026-06-30 — Milestone 5: in-memory eventing & messaging](2026/06/2026-06-30-eventing.md)
 - [2026-06-30 — Milestone 4: persistence patterns](2026/06/2026-06-30-persistence-patterns.md)
 - [2026-06-30 — Milestone 3: functional Result/Error model](2026/06/2026-06-30-result-model.md)
