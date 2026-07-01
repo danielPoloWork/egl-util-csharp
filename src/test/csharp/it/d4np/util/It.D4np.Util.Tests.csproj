@@ -14,7 +14,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
     <PackageReference Include="FsCheck.Xunit" Version="3.3.3" />
+    <PackageReference Include="MediatR" Version="12.5.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.28" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.28" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />

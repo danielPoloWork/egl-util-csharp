@@ -5,7 +5,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MediatR.Contracts" Version="2.0.1" />
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="MediatR" Version="12.5.0" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -13,7 +14,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Description>Application-layer building blocks for egl-util-csharp: domain-event notifications adapting domain events onto MediatR.</Description>
+    <Description>Application-layer building blocks for egl-util-csharp: domain-event notifications onto MediatR and a FluentValidation pipeline behavior.</Description>
   </PropertyGroup>
 
 </Project>

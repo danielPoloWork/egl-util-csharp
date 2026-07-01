@@ -27,8 +27,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - In-memory eventing (Milestone 5): `IEventBroker` (async publish) and `IEventHandler<TEvent>` in
   `It.D4np.Util.Application`; `EventBroker` — a `System.Threading.Channels` background consumer with
   back-pressure, per-handler failure isolation, and a graceful drain — in `It.D4np.Util.Infrastructure`.
+- Security & validation (Milestone 6): `IPasswordHasher` (Application) and `ValidationPipelineBehavior<TRequest, TResponse>`
+  — a MediatR pipeline behavior running FluentValidation validators — (Application); plus `PasswordHasher`
+  (PBKDF2-HMAC-SHA256, 128-bit salt, ≥ 600,000 iterations, constant-time verify, self-describing versioned
+  hash) in `It.D4np.Util.Infrastructure`.
 
 ### Changed
+
+- `It.D4np.Util.Application` now references the full `MediatR` package (12.5.0, for `IPipelineBehavior`)
+  and `FluentValidation` (11.11.0), superseding its prior `MediatR.Contracts`-only reference.
 
 ### Deprecated
 

@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
-- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-06-30 — Milestone 5: in-memory eventing & messaging](docs/journal/2026/06/2026-06-30-eventing.md).
+- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-06-30 — Milestone 6: security & validation](docs/journal/2026/06/2026-06-30-security-validation.md).
 
 ---
 
@@ -74,9 +74,9 @@ Async pub/sub on System.Threading.Channels, proven thread-safe.
 
 Secure password hashing and automatic request validation.
 
-- [ ] 6.1 Define IPasswordHasher and implement PasswordHasher (PBKDF2 >= 600k, random salt, constant-time verify)
-- [ ] 6.2 Implement ValidationPipelineBehavior<TRequest, TResponse> running FluentValidation validators
-- [ ] 6.3 Add known-answer/round-trip hashing tests and validation-failure tests
+- [x] 6.1 Define IPasswordHasher and implement PasswordHasher (PBKDF2 >= 600k, random salt, constant-time verify)
+- [x] 6.2 Implement ValidationPipelineBehavior<TRequest, TResponse> running FluentValidation validators
+- [x] 6.3 Add known-answer/round-trip hashing tests and validation-failure tests
 
 ---
 
@@ -110,8 +110,8 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | ⏳ |
-| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5, 3.1-3.4, 4.1-4.5, 5.1-5.3 | 🚧 |
-| §3 | Non-functional requirements | 1.3, 1.4, 5.2, 5.3 | 🚧 |
-| §4 | Logical architecture | 1.1, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3 | 🚧 |
-| §5 | Public interface | 1.2, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3 | 🚧 |
-| §6 | Verification & test strategy | 1.2, 1.4, 2.5, 3.4, 4.3, 5.3 | 🚧 |
+| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.3 | 🚧 |
+| §3 | Non-functional requirements | 1.3, 1.4, 5.2, 5.3, 6.1 | 🚧 |
+| §4 | Logical architecture | 1.1, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.2 | 🚧 |
+| §5 | Public interface | 1.2, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.2 | 🚧 |
+| §6 | Verification & test strategy | 1.2, 1.4, 2.5, 3.4, 4.3, 5.3, 6.3 | 🚧 |

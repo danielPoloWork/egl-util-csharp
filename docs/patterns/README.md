@@ -32,6 +32,8 @@ in `src/main/...`, ADR `Accepted`) · `Considered` · `Rejected` · `Superseded`
 | 7 | Unit of Work | Implemented | Commit a set of changes as one atomic transaction | [`IUnitOfWork`](../../src/main/csharp/it/d4np/util/Application/IUnitOfWork.cs) | [ADR-0006](../adr/0006-introduce-infrastructure-and-persistence-patterns.md) |
 | 8 | Producer-Consumer | Implemented | Decouple publishers from a single consumer via a bounded channel | [`EventBroker`](../../src/main/csharp/it/d4np/util/Infrastructure/EventBroker.cs) | [ADR-0007](../adr/0007-adopt-in-memory-event-broker-on-channels.md) |
 | 9 | Publish-Subscribe | Implemented | Broadcast an event to all interested handlers | [`IEventBroker`](../../src/main/csharp/it/d4np/util/Application/IEventBroker.cs) | [ADR-0007](../adr/0007-adopt-in-memory-event-broker-on-channels.md) |
+| 10 | Strategy | Implemented | Encapsulate an interchangeable password-hashing algorithm behind a stable interface | [`IPasswordHasher`](../../src/main/csharp/it/d4np/util/Application/IPasswordHasher.cs) | [ADR-0008](../adr/0008-adopt-secure-password-hashing-and-validation-behavior.md) |
+| 11 | Chain of Responsibility | Implemented | Run cross-cutting validation as a link in the MediatR request pipeline | [`ValidationPipelineBehavior`](../../src/main/csharp/it/d4np/util/Application/ValidationPipelineBehavior.cs) | [ADR-0008](../adr/0008-adopt-secure-password-hashing-and-validation-behavior.md) |
 
 ## Rejected
 
