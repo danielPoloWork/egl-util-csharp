@@ -14,6 +14,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Bundled into the single It.D4np.Util package via the Infrastructure project; not published on its own. -->
+    <IsPackable>false</IsPackable>
     <Description>Application-layer building blocks for egl-util-csharp: domain-event notifications onto MediatR and a FluentValidation pipeline behavior.</Description>
   </PropertyGroup>
 

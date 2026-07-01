@@ -35,6 +35,9 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   (`IMemoryCache` L1 + `IDistributedCache` L2) read-through cache — and `DistributedCacheExtensions`
   (typed get/set over `IDistributedCache` using compact `System.Text.Json`) in `It.D4np.Util.Infrastructure`.
   The Redis layer is integration-tested via Testcontainers (skipped when Docker is unavailable).
+- Utilities & DI (Milestone 8): `IDateTimeProvider` and `PaginatedList<T>` (Application); `DateTimeProvider`
+  and `ServiceCollectionExtensions.AddD4npUtil(...)` — one-call registration plus assembly-scanning
+  auto-registration of event handlers, validators, and specifications — (Infrastructure).
 
 ### Changed
 
@@ -42,6 +45,9 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   and `FluentValidation` (11.11.0), superseding its prior `MediatR.Contracts`-only reference.
 - `It.D4np.Util.Infrastructure` now references `Microsoft.Extensions.Caching.Abstractions` (8.0.0) for the
   two-level cache.
+- `It.D4np.Util.Infrastructure` also references `MediatR` (12.5.0) and `FluentValidation` (11.11.0) for
+  DI wiring, and is now the single packable project: the `It.D4np.Util` NuGet package bundles the Domain,
+  Application, and Infrastructure assemblies (with XML docs and README).
 
 ### Deprecated
 
