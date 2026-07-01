@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-07-01 — v1.0.0 release](docs/journal/2026/07/2026-07-01-release-v1.0.0.md).
+- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-07-01 — documentation i18n (zh, ja)](docs/journal/2026/07/2026-07-01-i18n-zh-ja.md).
 
 ---
 
@@ -98,6 +98,17 @@ Finish the utilities, freeze the API, package to NuGet, and cut v1.0.0.
 - [x] 8.2 Implement ServiceCollectionExtensions assembly-scanning auto-registration
 - [x] 8.3 Freeze the public API, record the API-stability ADR, and reach >= 80% coverage
 - [x] 8.4 Configure NuGet packaging (symbols, README, SemVer) and cut v1.0.0 via the release workflow
+
+---
+
+## Milestone 9 — Documentation i18n
+
+Post-1.0 documentation work: translate the front-door docs, keeping English the source of truth.
+Not reflected in the README milestone table, which is intentionally left untouched so the
+`i18n-freshness` check's source anchor stays stable (ADR-0011).
+
+- [x] 9.1 Enable the `i18n-freshness` lint and add the `docs/i18n/` index + translation-status manifest (ADR-0011)
+- [x] 9.2 Translate the README into Simplified Chinese (`README.zh-CN.md`) and Japanese (`README.ja.md`)
 
 ---
 

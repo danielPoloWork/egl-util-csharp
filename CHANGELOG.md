@@ -12,6 +12,10 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- Documentation i18n (Milestone 9): the README translated into Simplified Chinese (`README.zh-CN.md`)
+  and Japanese (`README.ja.md`), with a `docs/i18n/` index and a freshness-tracked translation manifest
+  (English remains the source of truth; ADR-0011). Docs only — the shipped package is unchanged.
+
 ### Changed
 
 ### Deprecated

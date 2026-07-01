@@ -34,6 +34,13 @@ identifiers, comments, documentation, ADRs, commit messages, branch names, PR ti
 descriptions. The maintainer may converse in another language; conversational replies may
 match that language, but anything that lands on disk or in Git is English-only.
 
+**Exception — translated user-facing docs.** Per [ADR-0011](docs/adr/0011-adopt-documentation-i18n-zh-ja.md),
+translations of user-facing documentation are allowed (e.g. `README.zh-CN.md`, `README.ja.md` at the repo
+root, beside `README.md`), indexed under [`docs/i18n/`](docs/i18n/). **English remains the source of
+truth**; translations are derived and are tracked for freshness by the `i18n-freshness` check in
+`tools/consistency_lint.py`. This exception covers *only* those translated docs — code, identifiers,
+ADRs, specs, commits, branches, and PR text stay English.
+
 ## 3. Project Overview
 
 `egl-util-csharp`
