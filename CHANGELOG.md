@@ -31,11 +31,17 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   — a MediatR pipeline behavior running FluentValidation validators — (Application); plus `PasswordHasher`
   (PBKDF2-HMAC-SHA256, 128-bit salt, ≥ 600,000 iterations, constant-time verify, self-describing versioned
   hash) in `It.D4np.Util.Infrastructure`.
+- Caching & optimization (Milestone 7): `ICacheService` (Application); `CacheService` — a two-level
+  (`IMemoryCache` L1 + `IDistributedCache` L2) read-through cache — and `DistributedCacheExtensions`
+  (typed get/set over `IDistributedCache` using compact `System.Text.Json`) in `It.D4np.Util.Infrastructure`.
+  The Redis layer is integration-tested via Testcontainers (skipped when Docker is unavailable).
 
 ### Changed
 
 - `It.D4np.Util.Application` now references the full `MediatR` package (12.5.0, for `IPipelineBehavior`)
   and `FluentValidation` (11.11.0), superseding its prior `MediatR.Contracts`-only reference.
+- `It.D4np.Util.Infrastructure` now references `Microsoft.Extensions.Caching.Abstractions` (8.0.0) for the
+  two-level cache.
 
 ### Deprecated
 

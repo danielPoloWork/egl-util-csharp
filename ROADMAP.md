@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
-- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-06-30 — Milestone 6: security & validation](docs/journal/2026/06/2026-06-30-security-validation.md).
+- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: [2026-07-01 — Milestone 7: caching & optimization](docs/journal/2026/07/2026-07-01-caching.md).
 
 ---
 
@@ -84,9 +84,9 @@ Secure password hashing and automatic request validation.
 
 Two-level caching with a compact distributed serialization format.
 
-- [ ] 7.1 Define ICacheService two-level (in-memory + distributed) with GetOrCreateAsync/TTL/invalidation
-- [ ] 7.2 Implement DistributedCacheExtensions (compact System.Text.Json over IDistributedCache)
-- [ ] 7.3 Integration-test the Redis layer via Testcontainers
+- [x] 7.1 Define ICacheService two-level (in-memory + distributed) with GetOrCreateAsync/TTL/invalidation
+- [x] 7.2 Implement DistributedCacheExtensions (compact System.Text.Json over IDistributedCache)
+- [x] 7.3 Integration-test the Redis layer via Testcontainers
 
 ---
 
@@ -110,8 +110,8 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | ⏳ |
-| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.3 | 🚧 |
+| §2 | Functional requirements | 1.1, 1.2, 2.1-2.5, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.3, 7.1-7.2 | 🚧 |
 | §3 | Non-functional requirements | 1.3, 1.4, 5.2, 5.3, 6.1 | 🚧 |
-| §4 | Logical architecture | 1.1, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.2 | 🚧 |
-| §5 | Public interface | 1.2, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.2 | 🚧 |
-| §6 | Verification & test strategy | 1.2, 1.4, 2.5, 3.4, 4.3, 5.3, 6.3 | 🚧 |
+| §4 | Logical architecture | 1.1, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.2, 7.1-7.2 | 🚧 |
+| §5 | Public interface | 1.2, 2.1-2.4, 3.1-3.4, 4.1-4.5, 5.1-5.3, 6.1-6.2, 7.1-7.2 | 🚧 |
+| §6 | Verification & test strategy | 1.2, 1.4, 2.5, 3.4, 4.3, 5.3, 6.3, 7.3 | 🚧 |

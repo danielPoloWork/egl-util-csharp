@@ -52,7 +52,7 @@ setup.
 | 4 | Persistence patterns | ✅ done |
 | 5 | In-memory eventing & messaging | ✅ done |
 | 6 | Security & validation | ✅ done |
-| 7 | Caching & optimization | ⏳ planned |
+| 7 | Caching & optimization | ✅ done |
 | 8 | Utilities, DI, and 1.0 hardening | ⏳ planned |
 
 ## License

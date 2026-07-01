@@ -24,3 +24,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0006](0006-introduce-infrastructure-and-persistence-patterns.md) | Introduce the Infrastructure assembly and adopt the persistence patterns | Accepted |
 | [0007](0007-adopt-in-memory-event-broker-on-channels.md) | Adopt an in-memory event broker on System.Threading.Channels | Accepted |
 | [0008](0008-adopt-secure-password-hashing-and-validation-behavior.md) | Adopt secure password hashing and a validation pipeline behavior | Accepted |
+| [0009](0009-adopt-two-level-cache-and-distributed-serialization.md) | Adopt a two-level cache and compact distributed serialization | Accepted |
