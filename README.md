@@ -2,7 +2,7 @@
 
 > Strongly-typed DDD, Clean Architecture, CQRS and functional Result building blocks for .NET 8
 
-![Status](https://img.shields.io/badge/Status-v0.0.0-blue)
+![Status](https://img.shields.io/badge/Status-v1.0.0-brightgreen)
 
 A
 library written in **C# 12 / .NET 8**, built and governed to an enterprise quality
@@ -25,7 +25,16 @@ dotnet test -c Release
 
 - **Toolchain:** dotnet SDK (MSBuild), Directory.Build.props, xUnit (+ FsCheck for property tests), dotnet format / CSharpier, Roslyn analyzers + .editorconfig (warnings as errors).
 - **Supported platforms:** Linux x64, Windows x64, macOS arm64 (.NET 8).
-- Consumers import the public surface via: `using It.D4np.Util;`.
+- Consumers import the public surface via the layer namespaces `It.D4np.Util.Domain`, `It.D4np.Util.Application`, and `It.D4np.Util.Infrastructure`.
+
+## Install
+
+The library ships as a single NuGet package bundling the domain, application, and infrastructure
+layers:
+
+```bash
+dotnet add package It.D4np.Util
+```
 
 See [`docs/development/local-build.md`](docs/development/local-build.md) for the full local
 setup.
@@ -53,7 +62,7 @@ setup.
 | 5 | In-memory eventing & messaging | ✅ done |
 | 6 | Security & validation | ✅ done |
 | 7 | Caching & optimization | ✅ done |
-| 8 | Utilities, DI, and 1.0 hardening | ⏳ planned |
+| 8 | Utilities, DI, and 1.0 hardening | ✅ done |
 
 ## License
 

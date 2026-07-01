@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-01 — v1.0.0 release](2026/07/2026-07-01-release-v1.0.0.md)
 - [2026-07-01 — Milestone 8: utilities, DI, and 1.0 hardening](2026/07/2026-07-01-utilities-di.md)
 - [2026-07-01 — Milestone 7: caching & optimization](2026/07/2026-07-01-caching.md)
 - [2026-06-30 — Milestone 6: security & validation](2026/06/2026-06-30-security-validation.md)

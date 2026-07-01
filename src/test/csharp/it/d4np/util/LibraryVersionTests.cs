@@ -3,14 +3,14 @@ using Xunit;
 namespace It.D4np.Util.Tests;
 
 /// <summary>
-/// Milestone-1 smoke test: proves the test harness runs and the seeded version constant is
-/// in lockstep with the README badge / consistency_lint expectation (0.0.0 at bootstrap).
+/// Proves the library version constant is the current release and is kept in lockstep with the
+/// README badge, the package version, and the release files by <c>tools/consistency_lint.py</c>.
 /// </summary>
 public class LibraryVersionTests
 {
     [Fact]
-    public void Version_is_seeded_at_zero()
+    public void Version_is_the_current_release()
     {
-        Assert.Equal("0.0.0", LibraryVersion.Version);
+        Assert.Equal("1.0.0", LibraryVersion.Version);
     }
 }

@@ -35,7 +35,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>It.D4np.Util</PackageId>
-    <Version>0.0.0</Version>
+    <Version>1.0.0</Version>
     <Authors>Daniel Polo</Authors>
     <Product>egl-util-csharp</Product>
     <PackageDescription>Strongly-typed DDD, Clean Architecture, CQRS and functional Result building blocks for .NET 8: entities, value objects, aggregates, the Result/Error model, repository/specification/unit-of-work, an in-memory event broker, PBKDF2 password hashing, FluentValidation pipeline behavior, and a two-level cache.</PackageDescription>
