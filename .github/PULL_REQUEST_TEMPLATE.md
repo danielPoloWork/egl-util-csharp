@@ -27,7 +27,7 @@ Link to the spec section, ADR, roadmap item, or issue that prompted this work.
 ## Documentation Impact
 
 - [ ] README.md updated (if user-facing surface changed)
-- [ ] ROADMAP.md checkbox flipped
+- [ ] docs/ROADMAP.md checkbox flipped
 - [ ] ADR added/updated (if a non-trivial design decision was made)
 - [ ] docs/patterns/README.md updated (if a pattern was introduced, refined, or rejected)
 - [ ] Spec updated (if behavior diverges from `docs/specs/`)

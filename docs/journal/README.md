@@ -3,13 +3,13 @@
 Dated end-of-session checkpoints — what got done, where the project stands, and how the
 next session resumes. One file per session that changed the project's state, at
 `docs/journal/<YYYY>/<MM>/<YYYY-MM-DD>-<short-slug>.md`. The journal is the dated trail;
-`ROADMAP.md` is the forward plan — checkpoints never live inline in the roadmap.
+`docs/ROADMAP.md` is the forward plan — checkpoints never live inline in the roadmap.
 
 At the close of a state-changing session, the agent:
 
 1. Creates the dated file under `docs/journal/<YYYY>/<MM>/`.
 2. Adds a link row to this index (newest first, grouped by year/month).
-3. Updates the *Latest checkpoint* pointer in `ROADMAP.md`.
+3. Updates the *Latest checkpoint* pointer in `docs/ROADMAP.md`.
 
 ## Index
 
@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-01 — documentation i18n (zh, ja)](2026/07/2026-07-01-i18n-zh-ja.md)
 - [2026-07-01 — v1.0.0 release](2026/07/2026-07-01-release-v1.0.0.md)
 - [2026-07-01 — Milestone 8: utilities, DI, and 1.0 hardening](2026/07/2026-07-01-utilities-di.md)
 - [2026-07-01 — Milestone 7: caching & optimization](2026/07/2026-07-01-caching.md)

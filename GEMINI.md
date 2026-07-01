@@ -15,7 +15,7 @@ first; it is the source of truth.**
 - **Git:** agents commit, push, and *draft* PRs on feature branches. **The user opens and
   merges PRs manually.** One roadmap item per PR, **one PR at a time — no stacked PRs.**
   Conventional Commits, branch `<type>/<short-kebab>`. See §6.
-- **Docs:** every PR keeps `README.md`, `ROADMAP.md`, `docs/adr/`, and `docs/patterns/` in
+- **Docs:** every PR keeps `README.md`, `docs/ROADMAP.md`, `docs/adr/`, and `docs/patterns/` in
   sync. Non-trivial design choices need an ADR. See §7.
 - **Design patterns:** apply classical patterns where they fit; every adoption justified in
   an ADR + catalogued. Never force-fit. See §8.
@@ -27,7 +27,7 @@ first; it is the source of truth.**
 ## Gemini Antigravity specifics
 
 - Use the built-in planning surface to track multi-step work; mirror major checkpoints back
-  to `ROADMAP.md`.
+  to `docs/ROADMAP.md`.
 - Run `python tools/consistency_lint.py` before drafting a PR.
 - Never push to `main`. Never run `git merge` or `gh pr merge`. Draft PRs only
   — the user clicks "Create" and "Merge".
