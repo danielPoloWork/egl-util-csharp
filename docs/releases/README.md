@@ -10,6 +10,4 @@ README badge.
 
 | Version | Date | Highlights | Notes |
 |---------|------|------------|-------|
-| —       | —    | —          | —     |
-
-_No releases yet — the first one lands when Milestone 1 ships._
+| [v1.0.0](v1.0.0.md) | 2026-07-01 | First stable release — the full Milestone 1–8 surface | Frozen under SemVer (ADR-0010) |

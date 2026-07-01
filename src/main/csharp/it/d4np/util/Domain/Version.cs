@@ -10,5 +10,5 @@ namespace It.D4np.Util;
 public static class LibraryVersion
 {
     /// <summary>The current SemVer version of egl-util-csharp.</summary>
-    public const string Version = "0.0.0";
+    public const string Version = "1.0.0";
 }
