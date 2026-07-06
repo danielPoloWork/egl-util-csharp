@@ -47,6 +47,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Security
 
+- CI now restores in locked mode (#23). `RestoreLockedMode` is enabled in `Directory.Build.props`
+  when `GITHUB_ACTIONS=true`, so a drifted or tampered `packages.lock.json` fails the build across the
+  build, quality, and release jobs instead of being silently rewritten — making the committed
+  lockfiles a real supply-chain gate (ADR-0014). Repo/CI change only; the shipped package is unchanged.
+
 ---
 
 ## Released versions
