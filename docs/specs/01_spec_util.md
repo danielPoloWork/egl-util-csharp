@@ -22,7 +22,7 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 - `ISpecification<TEntity>` — Specification pattern: criteria expression, includes, ordering, and paging, isolating LINQ/EF Core query shape.
 - `SpecificationEvaluator` — applies an `ISpecification<TEntity>` to an `IQueryable<TEntity>`, composing criteria, includes, ordering, and paging deterministically.
 - `IUnitOfWork` — atomic transaction boundary; `SaveChangesAsync` commits all tracked changes as one unit.
-- `DbContextExtensions` — extracts pending domain events from tracked aggregates and publishes them around `SaveChanges`, clearing them on success.
+- `DbContextExtensions` — extracts pending domain events from tracked aggregates and publishes them around `SaveChanges`, clearing them on success; `CaptureDomainEvents` snapshots the events before `SaveChanges` (into a `DomainEventSnapshot`) so events on aggregates the save removes are still delivered.
 - `IEventBroker` — asynchronous in-memory publish abstraction (`PublishAsync<TEvent>`) that does not block the caller.
 - `EventBroker` — `System.Threading.Channels`-backed implementation with a background consumer: thread-safe, bounded back-pressure, ordered per-channel delivery.
 - `IEventHandler<TEvent>` — consumer contract (`HandleAsync(TEvent, CancellationToken)`) resolved per event type.
@@ -92,7 +92,7 @@ Consumers import via `using It.D4np.Util;`. The public surface:
 - `IDomainEvent`, `DomainEventNotification<TEvent>` — domain-event surface.
 - `Result`, `Result<TValue>`, `Error`, `Result.Combine(...)` — functional error model.
 - `IRepository<TEntity, TId>`, `ISpecification<TEntity>`, `SpecificationEvaluator` — query/persistence.
-- `IUnitOfWork`, `DbContextExtensions` — transaction + event dispatch.
+- `IUnitOfWork`, `DbContextExtensions`, `DomainEventSnapshot` — transaction + event dispatch (post-save change-tracker dispatch, or capture-before-save via `DomainEventSnapshot`).
 - `IEventBroker`, `EventBroker`, `IEventHandler<TEvent>` — in-memory pub/sub.
 - `IPasswordHasher`, `PasswordHasher` — password hashing.
 - `ValidationPipelineBehavior<TRequest, TResponse>` — MediatR validation.

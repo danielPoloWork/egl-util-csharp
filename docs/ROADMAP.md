@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-01 — documentation i18n (zh, jp)](journal/2026/07/2026-07-01-i18n-zh-ja.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-06 — fix: domain events dropped on removed aggregates (#21)](journal/2026/07/2026-07-06-fix-domain-events-dropped-on-delete.md).
 
 ---
 

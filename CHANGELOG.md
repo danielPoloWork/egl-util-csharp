@@ -18,6 +18,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   — a NuGet version/downloads/CI/.NET/License badge row, a quick-start, and a translations switcher. The
   `i18n-freshness` lint is now content-digest based (squash-merge-safe). Docs only — the shipped package
   is unchanged.
+- Capture-before-save domain-event dispatch: `DbContextExtensions.CaptureDomainEvents(this DbContext)`
+  returns a `DomainEventSnapshot` taken before `SaveChangesAsync`, and
+  `DispatchDomainEventsAsync(this DomainEventSnapshot, …)` publishes it after the commit — preserving
+  the at-least-once, clear-on-success contract while delivering events for aggregates the save removes
+  (ADR-0012). Additive to the frozen 1.0 surface.
 
 ### Changed
 
@@ -26,6 +31,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 ### Removed
 
 ### Fixed
+
+- Domain events raised on an aggregate that is then removed in the same unit of work are no longer
+  silently dropped (#21). EF Core detaches `Deleted` entities from the change tracker once
+  `SaveChanges` completes, so the post-save `DispatchDomainEventsAsync(this DbContext, …)` overload
+  could not see them; the new capture-before-save flow (`CaptureDomainEvents` + `DomainEventSnapshot`)
+  delivers them. The change-tracker overload's documentation now states the limitation and points to
+  the safe flow.
 
 ### Security
 
