@@ -60,9 +60,9 @@ re-resolve — confirming the gate bites.
   only rejects a lockfile that has drifted from the project's dependency graph; it does **not** require
   a lockfile to exist. A project with no committed `packages.lock.json` restores green under locked
   mode (NuGet silently generates one in `obj/`), so its dependencies would be ungated. Every current
-  project commits a lockfile, but a future one (e.g. the planned `src/bench/…` tree) that forgets to
-  is not caught here. Enforcing presence — a CI/lint check that every project directory ships a tracked
-  `packages.lock.json` — is a tracked follow-up, kept separate so it can carry its own test.
+  project commits a lockfile, but a future one (e.g. the planned `src/bench/…` tree) that forgets to is
+  not caught by locked mode alone. **Resolved by [ADR-0015](0015-enforce-lockfile-presence-in-ci.md):**
+  the `consistency` CI job now fails if any tracked `.csproj` lacks a committed `packages.lock.json`.
 
 ## References
 

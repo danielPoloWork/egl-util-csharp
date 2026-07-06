@@ -30,3 +30,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0012](0012-capture-domain-events-before-save.md) | Capture domain events before SaveChanges so removed aggregates are not dropped | Accepted |
 | [0013](0013-cacheservice-size-limited-memorycache.md) | Make CacheService compatible with a size-limited IMemoryCache | Accepted |
 | [0014](0014-enforce-restore-locked-mode-in-ci.md) | Enforce restore locked mode in CI | Accepted |
+| [0015](0015-enforce-lockfile-presence-in-ci.md) | Enforce lockfile presence in CI | Accepted |

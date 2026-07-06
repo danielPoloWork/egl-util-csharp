@@ -51,6 +51,10 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   when `GITHUB_ACTIONS=true`, so a drifted or tampered `packages.lock.json` fails the build across the
   build, quality, and release jobs instead of being silently rewritten — making the committed
   lockfiles a real supply-chain gate (ADR-0014). Repo/CI change only; the shipped package is unchanged.
+- CI now enforces lockfile *presence* (follow-up to #23). The `consistency` job fails if any tracked
+  `.csproj` sits in a directory without a committed `packages.lock.json` — closing the gap where locked
+  mode catches drift but silently generates a missing lockfile, leaving a new project's dependencies
+  ungated (ADR-0015, closing ADR-0014's known limitation). Repo/CI change only.
 
 ---
 
