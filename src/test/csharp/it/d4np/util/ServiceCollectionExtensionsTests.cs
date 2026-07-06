@@ -73,6 +73,25 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public async Task Resolved_cache_service_works_with_a_size_limited_memory_cache()
+    {
+        // Regression for #20: a common production registration sets a SizeLimit; the resolved
+        // CacheService must not throw on its first read-through write.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions { SizeLimit = 64 }));
+        services.AddSingleton<IDistributedCache>(
+            new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions())));
+        services.AddD4npUtil(typeof(ServiceCollectionExtensionsTests).Assembly);
+        await using ServiceProvider provider = services.BuildServiceProvider();
+
+        var cache = provider.GetRequiredService<ICacheService>();
+        int value = await cache.GetOrCreateAsync("di:size", _ => Task.FromResult(42));
+
+        Assert.Equal(42, value);
+    }
+
+    [Fact]
     public async Task Exposes_the_event_broker_as_a_single_hosted_instance()
     {
         await using ServiceProvider provider = BuildProvider();

@@ -145,6 +145,57 @@ public sealed class CacheServiceTests : IDisposable
             () => _cache.GetOrCreateAsync("corrupt:1", _ => Task.FromResult(new Widget(1, "a"))).AsTask());
     }
 
+    // Regression for #20: a common production registration is AddMemoryCache(o => o.SizeLimit = N),
+    // which requires every entry to specify a Size. The read-through write must not throw.
+    [Fact]
+    public async Task GetOrCreateAsync_works_against_a_size_limited_memory_cache()
+    {
+        using var limited = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+        var cache = new CacheService(limited, _l2);
+        var calls = 0;
+        Task<Widget> Factory(CancellationToken _)
+        {
+            calls++;
+            return Task.FromResult(new Widget(7, "g"));
+        }
+
+        Widget? first = await cache.GetOrCreateAsync("s:1", Factory);  // read-through write, no throw
+        Widget? second = await cache.GetOrCreateAsync("s:1", Factory); // served from the size-limited L1
+
+        Assert.Equal(new Widget(7, "g"), first);
+        Assert.Equal(first, second);
+        Assert.Equal(1, calls);
+        Assert.True(limited.TryGetValue("s:1", out Widget? _)); // the entry was actually stored in L1
+    }
+
+    [Fact]
+    public async Task GetOrCreateAsync_with_ttl_works_against_a_size_limited_memory_cache()
+    {
+        using var limited = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+        var cache = new CacheService(limited, _l2);
+
+        // The ttl branch (AbsoluteExpirationRelativeToNow) must also specify a size.
+        Widget? value = await cache.GetOrCreateAsync(
+            "s:2", _ => Task.FromResult(new Widget(8, "h")), TimeSpan.FromMinutes(5));
+
+        Assert.Equal(new Widget(8, "h"), value);
+        Assert.True(limited.TryGetValue("s:2", out _));
+    }
+
+    [Fact]
+    public async Task GetOrCreateAsync_promotes_a_distributed_hit_into_a_size_limited_memory_cache()
+    {
+        using var limited = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
+        var cache = new CacheService(limited, _l2);
+        await _l2.SetAsync("s:3", new Widget(9, "i")); // seed only L2
+
+        Widget? read = await cache.GetOrCreateAsync("s:3", _ => Task.FromResult(new Widget(0, "x")));
+
+        Assert.Equal(new Widget(9, "i"), read);
+        Assert.True(limited.TryGetValue("s:3", out Widget? promoted)); // promotion write did not throw
+        Assert.Equal(new Widget(9, "i"), promoted);
+    }
+
     [Fact]
     public void Constructor_rejects_null_dependencies()
     {
