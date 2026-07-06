@@ -38,6 +38,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   could not see them; the new capture-before-save flow (`CaptureDomainEvents` + `DomainEventSnapshot`)
   delivers them. The change-tracker overload's documentation now states the limitation and points to
   the safe flow.
+- `CacheService` no longer throws against a size-limited `IMemoryCache` (#20). A cache registered
+  with `AddMemoryCache(o => o.SizeLimit = N)` requires every entry to specify a size, so the first
+  read-through/promotion write previously threw `InvalidOperationException`, breaking `GetOrCreateAsync`
+  for every uncached key. Each L1 entry is now written with an explicit size of one unit; for a
+  size-limited cache the `SizeLimit` therefore bounds the number of L1 entries (ADR-0013). No public
+  API change.
 
 ### Security
 

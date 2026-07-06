@@ -11,11 +11,20 @@ namespace It.D4np.Util.Infrastructure;
 /// value factory and the distributed store, realising the read-through / cache-aside strategy.
 /// </summary>
 /// <remarks>
+/// <para>
 /// On a read, L1 is checked first, then L2 (a hit there re-populates L1); a miss invokes the factory
 /// and writes both levels. Presence in L2 is decided from the stored bytes, not the deserialised
 /// value, so a cached <c>default(T)</c> is not mistaken for a miss. This implementation does not
 /// serialise concurrent misses for the same key, so under contention the factory may run more than
 /// once per key (last write wins).
+/// </para>
+/// <para>
+/// Every L1 entry is written with an explicit <see cref="MemoryCacheEntryOptions.Size"/> of one unit,
+/// so the service works whether or not the supplied <see cref="IMemoryCache"/> was registered with a
+/// <c>SizeLimit</c> (a size-limited cache requires a per-entry size, an unlimited one ignores it).
+/// When the cache is size-limited, its <c>SizeLimit</c> therefore bounds the <b>number</b> of
+/// entries this service keeps in L1.
+/// </para>
 /// </remarks>
 public sealed class CacheService : ICacheService
 {
@@ -86,16 +95,20 @@ public sealed class CacheService : ICacheService
         await _distributedCache.RemoveAsync(key, cancellationToken).ConfigureAwait(false);
     }
 
+    // Each L1 entry is written with an explicit size of one unit. A size-limited IMemoryCache
+    // (registered with MemoryCacheOptions.SizeLimit) requires every entry to specify a Size, so
+    // without this the first read-through write throws InvalidOperationException; an unlimited cache
+    // ignores the Size, so it is safe to set unconditionally. Consequently, for such a cache the
+    // SizeLimit bounds the number of CacheService entries (see the type remarks).
     private void SetMemory<T>(string key, T value, TimeSpan? ttl)
     {
+        var options = new MemoryCacheEntryOptions { Size = 1 };
         if (ttl is { } expiration)
         {
-            _memoryCache.Set(key, value, expiration);
+            options.AbsoluteExpirationRelativeToNow = expiration;
         }
-        else
-        {
-            _memoryCache.Set(key, value);
-        }
+
+        _memoryCache.Set(key, value, options);
     }
 
     private static DistributedCacheEntryOptions ToDistributedOptions(TimeSpan? ttl) =>
