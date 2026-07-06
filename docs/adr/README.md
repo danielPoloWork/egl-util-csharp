@@ -27,3 +27,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0009](0009-adopt-two-level-cache-and-distributed-serialization.md) | Adopt a two-level cache and compact distributed serialization | Accepted |
 | [0010](0010-finalize-utilities-di-api-freeze-and-packaging.md) | Adopt DI auto-registration and finalize the 1.0 API, coverage, and packaging | Accepted |
 | [0011](0011-adopt-documentation-i18n-zh-ja.md) | Adopt documentation i18n (Simplified Chinese and Japanese) | Accepted |
+| [0012](0012-capture-domain-events-before-save.md) | Capture domain events before SaveChanges so removed aggregates are not dropped | Accepted |
