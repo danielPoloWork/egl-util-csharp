@@ -18,6 +18,16 @@
     <Deterministic>true</Deterministic>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <!--
+      Supply-chain guard (issue #23): in CI, restore in locked mode so a drifted or tampered
+      transitive dependency fails the build instead of silently rewriting a committed
+      packages.lock.json. Set once here, it applies to EVERY restore in EVERY CI job (build,
+      quality, release, and any future job), including the implicit restore inside a build or
+      test, and cannot be forgotten when a job is added. Local restores stay unlocked so
+      developers can add or update packages and commit the regenerated lockfile in the same PR
+      (see docs/development/local-build.md). See ADR-0014.
+    -->
+    <RestoreLockedMode Condition="'$(GITHUB_ACTIONS)' == 'true'">true</RestoreLockedMode>
   </PropertyGroup>
 
 </Project>
