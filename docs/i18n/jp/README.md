@@ -41,7 +41,7 @@ public Result<User> Register(string email) =>
         : Result.Success(new User(Guid.NewGuid(), email));
 ```
 
-1 回の呼び出しで依存性注入を構成します。構成要素を登録し、イベントハンドラー・FluentValidation バリデーター・仕様をアセンブリスキャンで登録します：
+1 回の呼び出しで依存性注入を構成します。構成要素を登録し、イベントハンドラー・FluentValidation バリデーターをアセンブリスキャンで登録します：
 
 ```csharp
 using It.D4np.Util.Infrastructure;

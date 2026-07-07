@@ -48,6 +48,14 @@ public class ServiceCollectionExtensionsTests
         public bool IsPagingEnabled => false;
     }
 
+    // A specification built with a runtime argument — the normal shape (Specification<TEntity> sets its
+    // criteria via the constructor). Regression for #67: the scan must NOT register it, or the container
+    // cannot supply the Guid and a ValidateOnBuild host fails to start.
+    private sealed class ParameterizedSpecification : Specification<SampleEntity>
+    {
+        public ParameterizedSpecification(Guid customerId) => _ = customerId;
+    }
+
     // Open-generic implementors in the scanned assembly. Regression for #65: the scan must skip these.
     // GetInterfaces() on the open definition yields the open constructed interface (e.g.
     // IEventHandler<TEvent>), and registering the definition against it makes BuildServiceProvider throw
@@ -175,13 +183,38 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public async Task Auto_registers_scanned_handlers_validators_and_specifications()
+    public async Task Auto_registers_scanned_handlers_and_validators()
     {
         await using ServiceProvider provider = BuildProvider();
 
         Assert.IsType<SampleEventHandler>(Assert.Single(provider.GetServices<IEventHandler<SampleEvent>>()));
         Assert.Contains(provider.GetServices<IValidator<SampleRequest>>(), validator => validator is SampleValidator);
-        Assert.IsType<SampleSpecification>(Assert.Single(provider.GetServices<ISpecification<SampleEntity>>()));
+    }
+
+    [Fact]
+    public async Task Specifications_are_not_auto_registered()
+    {
+        // Regression for #67: specifications are query objects built with runtime arguments (e.g.
+        // ParameterizedSpecification(Guid)), so the scan must not register them. Before the fix they were
+        // registered as ISpecification<SampleEntity>; a parameterized spec then had no way for the
+        // container to supply its Guid, so ValidateOnBuild — which Host/WebApplication builders enable in
+        // Development — failed and the whole host could not start. Removing the registration is the fix.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions()));
+        services.AddSingleton<IDistributedCache>(
+            new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions())));
+
+        services.AddD4npUtil(typeof(ServiceCollectionExtensionsTests).Assembly);
+
+        // No specification is registered — neither the parameterless SampleSpecification nor the
+        // parameterized one whose Guid the container could never supply.
+        Assert.DoesNotContain(services, descriptor =>
+            descriptor.ServiceType.IsGenericType
+            && descriptor.ServiceType.GetGenericTypeDefinition() == typeof(ISpecification<>));
+
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        Assert.Empty(provider.GetServices<ISpecification<SampleEntity>>());
     }
 
     [Fact]

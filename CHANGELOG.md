@@ -43,6 +43,16 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Removed
 
+- `AddD4npUtil` no longer auto-registers `ISpecification<>` implementations from the scanned assemblies
+  (#67). A specification is a query object built with its runtime arguments (e.g.
+  `OrdersByCustomerSpec(Guid customerId)`), so the scan's `Transient(ISpecification<TEntity>, spec)`
+  descriptor had constructor parameters the container could not supply; with `ValidateOnBuild` enabled
+  (the default in a Development host) the container then failed to build and the application would not
+  start — triggered merely by defining a parameterized specification in a scanned assembly. Event
+  handlers and validators are still auto-registered. Construct specifications where you use them
+  (`new OrdersByCustomerSpec(id)`) — nothing in the library resolved them from DI. Treated as a
+  correctness fix (ADR-0019, superseding that part of ADR-0010).
+
 ### Fixed
 
 - `AddD4npUtil`'s assembly scan now skips open-generic type definitions (#65). An open-generic handler,

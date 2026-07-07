@@ -43,7 +43,7 @@ public Result<User> Register(string email) =>
 ```
 
 One-call dependency-injection wiring — registers the building blocks and assembly-scans for your
-event handlers, FluentValidation validators, and specifications:
+event handlers and FluentValidation validators:
 
 ```csharp
 using It.D4np.Util.Infrastructure;
