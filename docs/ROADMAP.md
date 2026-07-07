@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-07 — release workflow packs & publishes the NuGet package (#22)](journal/2026/07/2026-07-07-release-pack-and-publish.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-07 — fix: EventBroker self-deadlock on in-handler re-publish (#19)](journal/2026/07/2026-07-07-eventbroker-republish-deadlock.md).
 
 ---
 

@@ -11,6 +11,12 @@ public interface IEventBroker
     /// for its runtime type. The returned task completes once the event has been accepted for delivery,
     /// not once it is handled.
     /// </summary>
+    /// <remarks>
+    /// An <see cref="IEventHandler{TEvent}"/> may publish follow-up events (event chaining). Because such
+    /// a re-entrant publish runs on the broker's own delivery flow, an implementation may make it
+    /// non-blocking and fail (rather than block) when it cannot immediately accept the event, so it must
+    /// not deadlock the delivery. Handlers doing chaining should tolerate that failure.
+    /// </remarks>
     /// <typeparam name="TEvent">The event type.</typeparam>
     /// <param name="event">The event to publish; must not be <see langword="null"/>.</param>
     /// <param name="cancellationToken">A token to cancel enqueueing (e.g. while waiting under back-pressure).</param>

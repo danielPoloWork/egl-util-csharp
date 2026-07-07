@@ -35,6 +35,116 @@ public class EventBrokerTests
         return services.BuildServiceProvider();
     }
 
+    // A handler that re-publishes a follow-up event (event chaining) on the first event.
+    private sealed class ChainingHandler : IEventHandler<Pinged>
+    {
+        private readonly IEventBroker _broker;
+        private readonly TaskCompletionSource _followUpHandled;
+        private int _count;
+
+        public ChainingHandler(IEventBroker broker, TaskCompletionSource followUpHandled)
+        {
+            _broker = broker;
+            _followUpHandled = followUpHandled;
+        }
+
+        public int Count => Volatile.Read(ref _count);
+
+        public async Task HandleAsync(Pinged @event, CancellationToken cancellationToken = default)
+        {
+            Interlocked.Increment(ref _count);
+            if (@event.Sequence == 1)
+            {
+                await _broker.PublishAsync(new Pinged(2), cancellationToken); // re-entrant follow-up
+            }
+            else
+            {
+                _followUpHandled.TrySetResult();
+            }
+        }
+    }
+
+    // A handler that, while the single consumer is parked in it, re-publishes twice into a capacity-1
+    // channel: the first fills the slot, the second hits a full channel.
+    private sealed class FullChannelRepublishingHandler : IEventHandler<Pinged>
+    {
+        private readonly IEventBroker _broker;
+        private readonly TaskCompletionSource _done;
+
+        public FullChannelRepublishingHandler(IEventBroker broker, TaskCompletionSource done)
+        {
+            _broker = broker;
+            _done = done;
+        }
+
+        public bool CaughtFull { get; private set; }
+
+        public async Task HandleAsync(Pinged @event, CancellationToken cancellationToken = default)
+        {
+            if (@event.Sequence != 1)
+            {
+                return; // only the first event re-publishes
+            }
+
+            await _broker.PublishAsync(new Pinged(2), cancellationToken); // enqueues (the one slot was free)
+            try
+            {
+                await _broker.PublishAsync(new Pinged(3), cancellationToken); // channel full — must fail fast, not block
+            }
+            catch (InvalidOperationException)
+            {
+                CaughtFull = true;
+            }
+            finally
+            {
+                _done.TrySetResult();
+            }
+        }
+    }
+
+    [Fact]
+    public async Task A_handler_may_publish_a_follow_up_event_that_is_delivered()
+    {
+        var followUpHandled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var services = new ServiceCollection();
+        services.AddSingleton(sp => new EventBroker(sp.GetRequiredService<IServiceScopeFactory>()));
+        services.AddSingleton<IEventBroker>(sp => sp.GetRequiredService<EventBroker>());
+        services.AddSingleton<IEventHandler<Pinged>>(
+            sp => new ChainingHandler(sp.GetRequiredService<IEventBroker>(), followUpHandled));
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        var broker = provider.GetRequiredService<EventBroker>();
+        var handler = (ChainingHandler)provider.GetRequiredService<IEventHandler<Pinged>>();
+        await broker.StartAsync(CancellationToken.None);
+
+        await broker.PublishAsync(new Pinged(1));
+        await followUpHandled.Task.WaitAsync(TimeSpan.FromSeconds(30)); // the re-published event was delivered
+
+        await broker.StopAsync(CancellationToken.None);
+        Assert.Equal(2, handler.Count); // original + follow-up both handled
+    }
+
+    [Fact]
+    public async Task An_in_handler_publish_on_a_full_channel_fails_fast_instead_of_deadlocking()
+    {
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var services = new ServiceCollection();
+        services.AddSingleton(sp => new EventBroker(sp.GetRequiredService<IServiceScopeFactory>(), capacity: 1));
+        services.AddSingleton<IEventBroker>(sp => sp.GetRequiredService<EventBroker>());
+        services.AddSingleton<IEventHandler<Pinged>>(
+            sp => new FullChannelRepublishingHandler(sp.GetRequiredService<IEventBroker>(), done));
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        var broker = provider.GetRequiredService<EventBroker>();
+        var handler = (FullChannelRepublishingHandler)provider.GetRequiredService<IEventHandler<Pinged>>();
+        await broker.StartAsync(CancellationToken.None);
+
+        await broker.PublishAsync(new Pinged(1));
+        // Before the fix the second in-handler publish blocks forever (self-deadlock); the timeout bounds it.
+        await done.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        await broker.StopAsync(CancellationToken.None);
+        Assert.True(handler.CaughtFull); // the publish onto the full channel failed fast, not deadlocked
+    }
+
     [Fact]
     public async Task Publishes_an_event_to_its_registered_handler()
     {
