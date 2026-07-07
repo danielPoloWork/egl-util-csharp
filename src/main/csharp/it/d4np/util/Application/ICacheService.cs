@@ -26,13 +26,15 @@ public interface ICacheService
     /// <see langword="null"/> result is returned to the caller but not cached.
     /// </param>
     /// <param name="ttl">
-    /// How long the entry stays valid. <see langword="null"/> means no explicit expiration (the entry
-    /// lives until evicted by the underlying caches).
+    /// How long the entry stays valid; must be a <b>strictly positive</b> duration when specified.
+    /// <see langword="null"/> means no explicit expiration (the entry lives until evicted by the
+    /// underlying caches).
     /// </param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>The cached or freshly created value; may be <see langword="null"/> if the factory returned <see langword="null"/>.</returns>
     /// <exception cref="ArgumentException"><paramref name="key"/> is <see langword="null"/> or empty.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="ttl"/> is specified and not strictly positive.</exception>
     ValueTask<T?> GetOrCreateAsync<T>(
         string key,
         Func<CancellationToken, Task<T>> factory,
