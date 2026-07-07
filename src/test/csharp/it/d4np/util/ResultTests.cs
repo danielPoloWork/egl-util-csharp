@@ -51,4 +51,31 @@ public class ResultTests
         Assert.Throws<ArgumentException>(() => Result.Failure(new Error("E1", "real"), Error.None));
         Assert.Throws<ArgumentException>(() => Result.Failure<int>(Error.None));
     }
+
+    [Fact]
+    public void Errors_is_a_read_only_view_that_cannot_be_mutated_through_a_downcast()
+    {
+        // #85: Errors must not be castable back to its mutable backing array — otherwise a consumer can
+        // mutate a supposedly immutable Result after construction.
+        Result result = Result.Failure(new Error("E1", "first"), new Error("E2", "second"));
+
+        Assert.IsNotType<Error[]>(result.Errors);
+        Assert.Throws<InvalidCastException>(() => _ = (Error[])result.Errors);
+    }
+
+    [Fact]
+    public void A_subclass_supplied_mutable_list_cannot_mutate_errors_after_construction()
+    {
+        // #85: the protected constructor takes IReadOnlyList<Error>; a subclass could pass a mutable list
+        // and keep mutating it. Errors must be an independent, read-only copy.
+        var backing = new List<Error> { new("E1", "first") };
+        var result = new SubclassResult(backing);
+
+        backing[0] = new Error("E2", "changed"); // mutate the caller's list after construction
+
+        Assert.Equal("E1", result.Errors[0].Code);
+    }
+
+    // A minimal Result subclass exercising the protected constructor's defensive copy (#85).
+    private sealed class SubclassResult(IReadOnlyList<Error> errors) : Result(false, errors);
 }

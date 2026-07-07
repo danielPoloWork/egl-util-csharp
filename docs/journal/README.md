@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-07 — Fix: Result.Errors is a truly read-only view (#85)](2026/07/2026-07-07-immutable-result-errors.md)
 - [2026-07-07 — Fix: remove the implicit Error → Result conversion (#28, breaking)](2026/07/2026-07-07-drop-implicit-error-operator.md)
 - [2026-07-07 — Fix: Result.Success rejects a null value (#27)](2026/07/2026-07-07-success-rejects-null.md)
 - [2026-07-07 — Fix: Result.Failure rejects Error.None (#29)](2026/07/2026-07-07-failure-rejects-error-none.md)

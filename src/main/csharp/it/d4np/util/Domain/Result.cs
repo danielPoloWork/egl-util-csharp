@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace It.D4np.Util.Domain;
 
 /// <summary>
@@ -8,7 +10,7 @@ namespace It.D4np.Util.Domain;
 /// </summary>
 public class Result
 {
-    private static readonly IReadOnlyList<Error> NoErrors = [];
+    private static readonly IReadOnlyList<Error> NoErrors = new ReadOnlyCollection<Error>([]);
 
     /// <summary>
     /// Initializes a result, enforcing the core invariant: a success carries no errors and a
@@ -32,7 +34,11 @@ public class Result
         }
 
         IsSuccess = isSuccess;
-        Errors = errors;
+
+        // Expose a defensive, truly read-only view: neither a downcast to the backing array nor a
+        // caller-retained reference (e.g. a subclass passing a mutable list) can mutate the errors of a
+        // constructed result (#85). Successes share the empty instance.
+        Errors = errors.Count == 0 ? NoErrors : new ReadOnlyCollection<Error>([.. errors]);
     }
 
     /// <summary>Whether the operation succeeded.</summary>
@@ -111,6 +117,6 @@ public class Result
                 nameof(errors));
         }
 
-        return errors.ToArray();
+        return errors;
     }
 }
