@@ -46,7 +46,9 @@ graph fails the build instead of being silently rewritten. Consequences for cont
 ## Before you open a PR
 
 1. `dotnet format --verify-no-changes` and `dotnet build -warnaserror` are clean.
-2. `dotnet test -c Release` passes; new/changed behavior is covered (≥ 80% line).
+2. `dotnet test -c Release` passes; new/changed behavior is covered. CI enforces **≥ 80% line coverage**
+   (coverlet.msbuild; ADR-0016) — reproduce it with
+   `dotnet test -c Release /p:CollectCoverage=true /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total`.
 3. Nullable reference types + Roslyn analyzers (soundness); dotnet-counters (leaks) are green where applicable.
 4. `dotnet restore --locked-mode` passes (regenerate a changed lockfile with `dotnet restore --force-evaluate`).
 5. `python tools/consistency_lint.py` passes.

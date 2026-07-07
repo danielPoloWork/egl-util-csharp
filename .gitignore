@@ -33,6 +33,12 @@ __pycache__/
 *.profraw
 .coverage
 htmlcov/
+# .NET coverage output (coverlet.msbuild writes coverage.* next to the test project;
+# `dotnet test --collect` writes a TestResults/ tree) — see ADR-0016.
+[Tt]est[Rr]esults/
+coverage.json
+coverage.cobertura.xml
+coverage.opencover.xml
 
 # IDE / editor
 /.idea/
