@@ -61,6 +61,27 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0          # i18n/version checks need full history
+      - name: Assert every project commits a packages.lock.json
+        shell: bash
+        run: |
+          # Supply-chain guard (issue #23 follow-up / ADR-0014): RestoreLockedMode gates lockfile
+          # *drift*, not *absence* — a project with no committed packages.lock.json restores green
+          # under locked mode (NuGet silently generates one in obj/), leaving it ungated. Fail the
+          # build if any tracked .csproj lives in a directory without a committed lockfile.
+          # NUL-delimited so paths with non-ASCII/special characters are never C-quoted by git.
+          missing=0
+          while IFS= read -r -d '' csproj; do
+            dir=$(dirname "$csproj")
+            if ! git ls-files --error-unmatch "$dir/packages.lock.json" >/dev/null 2>&1; then
+              echo "::error file=$csproj::Project has no committed packages.lock.json (RestorePackagesWithLockFile=true requires one; locked-mode CI cannot gate a project without it)"
+              missing=1
+            fi
+          done < <(git ls-files -z '*.csproj')
+          if [ "$missing" -ne 0 ]; then
+            echo "Supply-chain check failed: every project must commit a packages.lock.json (regenerate with 'dotnet restore --force-evaluate')."
+            exit 1
+          fi
+          echo "OK: every tracked .csproj has a committed packages.lock.json."
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.12'

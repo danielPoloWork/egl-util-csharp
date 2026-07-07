@@ -37,6 +37,9 @@ graph fails the build instead of being silently rewritten. Consequences for cont
 
 - **If you add or change a dependency,** regenerate and commit the lockfile in the same PR:
   `dotnet restore --force-evaluate`.
+- **If you add a new project,** commit its `packages.lock.json` too — the `consistency` CI job fails if
+  any tracked `.csproj` sits in a directory without a committed lockfile (locked mode only catches
+  *drift*, not a *missing* lockfile).
 - **Reproduce the CI check locally** before pushing: `dotnet restore --locked-mode` (it fails if any
   lockfile is out of sync). Local builds otherwise restore unlocked, so day-to-day work is unaffected.
 
