@@ -134,6 +134,27 @@ public sealed class CacheServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetOrCreateAsync_treats_a_json_null_L2_entry_as_a_miss()
+    {
+        // Regression for #59: a JSON "null" in L2 (e.g. written by another client) must not be promoted
+        // into L1 as a null "hit" — it is treated as a miss so the factory runs and its value is cached.
+        await _l2.SetAsync("null:1", Encoding.UTF8.GetBytes("null"), new DistributedCacheEntryOptions());
+        var calls = 0;
+        Task<Widget?> Factory(CancellationToken _)
+        {
+            calls++;
+            return Task.FromResult<Widget?>(new Widget(1, "a"));
+        }
+
+        Widget? first = await _cache.GetOrCreateAsync("null:1", Factory);
+        Widget? second = await _cache.GetOrCreateAsync("null:1", Factory);
+
+        Assert.Equal(new Widget(1, "a"), first);  // the JSON-null was a miss; the factory produced the value
+        Assert.Equal(new Widget(1, "a"), second);
+        Assert.Equal(1, calls); // factory ran once (not poisoned); the second call hit the real L1 value
+    }
+
+    [Fact]
     public async Task GetOrCreateAsync_propagates_a_serialization_error_for_a_corrupt_distributed_entry()
     {
         // Seed L2 with raw bytes that are not valid JSON. The instance IDistributedCache.SetAsync is

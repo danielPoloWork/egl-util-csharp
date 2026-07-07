@@ -77,8 +77,16 @@ public sealed class CacheService : ICacheService
         if (bytes is { Length: > 0 })
         {
             T? fromDistributed = CacheSerializer.Deserialize<T>(bytes);
-            SetMemory(key, fromDistributed, ttl);
-            return fromDistributed;
+
+            // A stored JSON `null` (e.g. written by another client sharing the store) is treated as a
+            // miss, not promoted into L1 — otherwise it would poison L1 with a null "hit" and every
+            // later read would skip the factory. This keeps the never-cache-null policy. A default
+            // value type (e.g. 0) is not null, so it is still a real hit.
+            if (fromDistributed is not null)
+            {
+                SetMemory(key, fromDistributed, ttl);
+                return fromDistributed;
+            }
         }
 
         // Miss — create, then write both levels. A null result is returned but not cached.

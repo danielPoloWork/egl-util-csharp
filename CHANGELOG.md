@@ -45,6 +45,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- A JSON-`null` L2 entry no longer poisons the L1 cache with a null "hit" (#59). `CacheService` now
+  treats a deserialized `null` from the distributed level as a miss (it runs the factory and does not
+  promote `null` into L1), and `DistributedCacheExtensions.SetAsync` refuses a `null` value — together
+  restoring the "a null result is never cached" contract across the interop path. A stored default value
+  type (e.g. `0`) is still a real hit.
 - `AddD4npUtil` now registers the `ValidationPipelineBehavior` idempotently (#32). It used a plain
   `AddTransient` (the lone non-idempotent registration), so calling `AddD4npUtil` twice — e.g. a library
   and its host both call it — appended a second descriptor and made MediatR run every FluentValidation

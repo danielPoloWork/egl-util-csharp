@@ -89,6 +89,15 @@ public class DistributedCacheExtensionsTests
             () => ((IDistributedCache)null!).SetAsync("k", 1));
     }
 
+    [Fact]
+    public async Task SetAsync_rejects_a_null_value()
+    {
+        // A JSON null would be indistinguishable from an absent key and would poison CacheService's L1;
+        // storing null is refused, matching the never-cache-null policy (#59).
+        Widget? nothing = null;
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _cache.SetAsync("w:null", nothing));
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData(null)]
