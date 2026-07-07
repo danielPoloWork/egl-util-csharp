@@ -62,6 +62,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- The cache serializer no longer corrupts a cached value's null properties (#58). `CacheSerializer` set
+  `DefaultIgnoreCondition = WhenWritingNull`, omitting null properties from the stored JSON; on read,
+  `System.Text.Json` left an absent property at its C# default, so a type with a non-null property default
+  (e.g. `string? Note { get; set; } = "n/a";`) cached with that property `null` came back with the default
+  after L1 eviction — silent, exception-free corruption where identical `GetOrCreateAsync` calls could
+  observe different data. Null properties are now written explicitly and round-trip as `null` (ADR-0021,
+  amending ADR-0009); payloads stay compact via the Web defaults and no indentation.
 - `Result.Errors` is now a truly read-only view (#85). It was backed by the `Error[]` returned from the
   factories, so a consumer could downcast `IReadOnlyList<Error>` to `Error[]` — or a subclass could pass a
   mutable list to the protected constructor and retain a reference — and mutate a supposedly immutable

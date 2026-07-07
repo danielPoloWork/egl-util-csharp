@@ -15,6 +15,15 @@ public class DistributedCacheExtensionsTests
 
     private sealed record Optional(int Id, string? Note);
 
+    private sealed class Annotated
+    {
+        public int Id { get; set; }
+
+        public string? Note { get; set; } = "n/a"; // non-null C# default
+    }
+
+    private sealed record AnnotatedRecord(int Id, string? Note = "n/a"); // non-null ctor-param default
+
     [Fact]
     public async Task SetAsync_then_GetAsync_round_trips_a_value()
     {
@@ -31,8 +40,8 @@ public class DistributedCacheExtensionsTests
     [InlineData("present")]
     public async Task Round_trips_an_object_with_a_nullable_property(string? note)
     {
-        // Guards the compact WhenWritingNull option: a null property is omitted on write and must
-        // deserialise back to null (not corrupt the value); a non-null property round-trips intact.
+        // A nullable property round-trips faithfully: null stays null, a non-null value is preserved.
+        // (#58 dropped the WhenWritingNull option that used to omit — and so corrupt — null properties.)
         var value = new Optional(3, note);
 
         await _cache.SetAsync("opt:3", value);
@@ -40,6 +49,29 @@ public class DistributedCacheExtensionsTests
 
         Assert.Equal(value, read);
         Assert.Equal(note, read!.Note);
+    }
+
+    [Fact]
+    public async Task An_explicitly_null_property_survives_the_round_trip_despite_a_non_null_default()
+    {
+        // Regression for #58: a property set to null must round-trip back as null. Previously
+        // WhenWritingNull omitted it on write, so deserialisation left it at the C# default ("n/a") —
+        // silent corruption of a value cached and then read back through L2. Covers both non-null-default
+        // shapes the issue names: a class property initializer and a record constructor-parameter default
+        // (distinct System.Text.Json deserialization paths).
+        var value = new Annotated { Id = 3, Note = null };
+        await _cache.SetAsync("ann:3", value);
+        Annotated? read = await _cache.GetAsync<Annotated>("ann:3");
+
+        Assert.NotNull(read);
+        Assert.Equal(3, read!.Id);
+        Assert.Null(read.Note); // pre-fix: "n/a"
+
+        await _cache.SetAsync("annrec:4", new AnnotatedRecord(4, Note: null));
+        AnnotatedRecord? readRecord = await _cache.GetAsync<AnnotatedRecord>("annrec:4");
+
+        Assert.NotNull(readRecord);
+        Assert.Null(readRecord!.Note); // pre-fix: "n/a"
     }
 
     [Fact]

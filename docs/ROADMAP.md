@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-07 — fix: Result.Errors is a truly read-only view (#85)](journal/2026/07/2026-07-07-immutable-result-errors.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-07 — fix: cache serializer preserves null properties (#58)](journal/2026/07/2026-07-07-cache-null-property-roundtrip.md).
 
 ---
 
