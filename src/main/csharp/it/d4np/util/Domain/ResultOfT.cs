@@ -29,6 +29,7 @@ public class Result<TValue> : Result
     public static implicit operator Result<TValue>(TValue value) => Success(value);
 
     /// <summary>Implicitly wraps an error as a failed result.</summary>
-    /// <param name="error">The failure error.</param>
+    /// <param name="error">The failure error; must not be <see cref="Error.None"/>.</param>
+    /// <exception cref="ArgumentException"><paramref name="error"/> is <see cref="Error.None"/>.</exception>
     public static implicit operator Result<TValue>(Error error) => Failure<TValue>(error);
 }

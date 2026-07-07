@@ -55,6 +55,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `Result.Failure` now rejects `Error.None` (#29). `Result.Failure(Error.None)` previously produced a
+  failure whose `Error` equalled `Error.None` — the sentinel documented as carried by *successful*
+  results — so a caller using the documented `result.Error == Error.None` success check misclassified a
+  genuine failure as success and silently swallowed it. Both `Failure(params Error[])` and its generic
+  overload — and the implicit `Error` → `Result<TValue>` conversion, which routes through them — now
+  throw `ArgumentException` when any supplied error is `Error.None`, so a failure always carries a
+  distinguishable error. No public API change.
 - `AddD4npUtil`'s assembly scan now skips open-generic type definitions (#65). An open-generic handler,
   validator, or specification in a scanned assembly (e.g. `AuditHandler<TEvent> : IEventHandler<TEvent>`)
   was registered against its open constructed interface, so `BuildServiceProvider` threw an

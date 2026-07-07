@@ -52,8 +52,10 @@ public class Result
     public static Result Success() => new(true, NoErrors);
 
     /// <summary>Creates a failed result carrying the given errors.</summary>
-    /// <param name="errors">One or more errors; must be non-null and non-empty.</param>
+    /// <param name="errors">One or more errors; must be non-null, non-empty, and must not contain <see cref="Error.None"/>.</param>
     /// <returns>A failed <see cref="Result"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="errors"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="errors"/> is empty or contains <see cref="Error.None"/>.</exception>
     public static Result Failure(params Error[] errors) => new(false, Defensive(errors));
 
     /// <summary>Creates a successful result carrying <paramref name="value"/>.</summary>
@@ -64,8 +66,10 @@ public class Result
 
     /// <summary>Creates a failed result of <typeparamref name="TValue"/> carrying the given errors.</summary>
     /// <typeparam name="TValue">The success value type.</typeparam>
-    /// <param name="errors">One or more errors; must be non-null and non-empty.</param>
+    /// <param name="errors">One or more errors; must be non-null, non-empty, and must not contain <see cref="Error.None"/>.</param>
     /// <returns>A failed <see cref="Result{TValue}"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="errors"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="errors"/> is empty or contains <see cref="Error.None"/>.</exception>
     public static Result<TValue> Failure<TValue>(params Error[] errors) => new(default, false, Defensive(errors));
 
     /// <summary>
@@ -85,6 +89,16 @@ public class Result
     private static IReadOnlyList<Error> Defensive(Error[] errors)
     {
         ArgumentNullException.ThrowIfNull(errors);
+        if (Array.Exists(errors, static error => error == Error.None))
+        {
+            // Error.None is the sentinel carried by successful results. A failure carrying it would
+            // satisfy the documented `result.Error == Error.None` success check and be silently
+            // swallowed, so a genuine failure must always carry a distinguishable error (#29).
+            throw new ArgumentException(
+                "A failed result cannot carry Error.None, the sentinel reserved for successful results.",
+                nameof(errors));
+        }
+
         return errors.ToArray();
     }
 }
