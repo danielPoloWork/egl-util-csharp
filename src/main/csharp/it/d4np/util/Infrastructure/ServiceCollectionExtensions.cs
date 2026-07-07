@@ -38,8 +38,8 @@ public static class ServiceCollectionExtensions
     /// <see cref="CacheService"/>), MediatR itself, and — for event delivery — logging. Assembly
     /// scanning registers every concrete
     /// <see cref="IEventHandler{TEvent}"/>, <see cref="IValidator{T}"/>, and
-    /// <see cref="ISpecification{TEntity}"/> as transient. When no assembly is given, the calling
-    /// assembly is scanned.
+    /// <see cref="ISpecification{TEntity}"/> as transient; open-generic type definitions are skipped
+    /// (DI cannot construct them). When no assembly is given, the calling assembly is scanned.
     /// </para>
     /// </remarks>
     /// <param name="services">The service collection to add to.</param>
@@ -80,13 +80,21 @@ public static class ServiceCollectionExtensions
     }
 
     // Registers every concrete type in the assemblies that closes the given open-generic interface,
-    // as a transient mapping from the closed interface to the implementation.
+    // as a transient mapping from the closed interface to the implementation. Open-generic type
+    // definitions are skipped: DI cannot construct them, so registering one would abort the whole
+    // container build (see below).
     private static void RegisterImplementations(
         IServiceCollection services, Type openGenericInterface, IEnumerable<Assembly> assemblies)
     {
         foreach (Type type in assemblies.SelectMany(GetLoadableTypes))
         {
-            if (type.IsAbstract || type.IsInterface)
+            // Skip open-generic definitions (e.g. `AuditHandler<TEvent> : IEventHandler<TEvent>`) as well
+            // as abstractions. Their GetInterfaces() yields the open constructed interface
+            // (`IEventHandler`1[TEvent]`), which still matches the target below, so registering the type
+            // against it would make BuildServiceProvider throw ("Cannot instantiate implementation type …")
+            // for the entire application. MediatR and FluentValidation skip generic definitions likewise; a
+            // handler/validator/specification must be a closed, new-able type to be auto-registered.
+            if (type.IsAbstract || type.IsInterface || type.ContainsGenericParameters)
             {
                 continue;
             }
