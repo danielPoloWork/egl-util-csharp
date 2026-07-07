@@ -143,7 +143,11 @@ public sealed class EventBroker : BackgroundService, IEventBroker
     {
         EventDispatch dispatch = Dispatchers.GetOrAdd(@event.GetType(), EventDispatch.ForEventType);
 
-        using IServiceScope scope = _scopeFactory.CreateScope();
+        // Dispose the per-event scope asynchronously: a synchronous Dispose throws for a resolved
+        // service that implements IAsyncDisposable but not IDisposable (leaking it and falsely logging
+        // the already-succeeded dispatch as failed). AsyncServiceScope still disposes plain
+        // IDisposable services synchronously, so this is strictly safer.
+        await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
         if (scope.ServiceProvider.GetService(dispatch.HandlerEnumerableType) is not IEnumerable handlers)
         {
             return;

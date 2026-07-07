@@ -212,4 +212,50 @@ public class EventBrokerTests
         // The failing handler neither stopped its sibling nor killed the consumer before event 2.
         Assert.Equal(2, counter.Count);
     }
+
+    // A scoped handler that implements IAsyncDisposable but NOT IDisposable: synchronous scope
+    // disposal throws for such a service, so the dispatch scope must be disposed asynchronously.
+    private sealed class AsyncDisposableHandler : IEventHandler<Pinged>, IAsyncDisposable
+    {
+        private readonly TaskCompletionSource _handled;
+        private readonly TaskCompletionSource _disposed;
+
+        public AsyncDisposableHandler(TaskCompletionSource handled, TaskCompletionSource disposed)
+        {
+            _handled = handled;
+            _disposed = disposed;
+        }
+
+        public Task HandleAsync(Pinged @event, CancellationToken cancellationToken = default)
+        {
+            _handled.TrySetResult();
+            return Task.CompletedTask;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            _disposed.TrySetResult();
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task Disposes_an_async_disposable_scoped_service_without_failing_dispatch()
+    {
+        // Regression for #60: the per-dispatch scope owns an IAsyncDisposable-only handler. A synchronous
+        // scope dispose throws (leaking it and falsely logging dispatch as failed); async disposal works.
+        var handled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var disposed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var services = new ServiceCollection();
+        services.AddScoped<IEventHandler<Pinged>>(_ => new AsyncDisposableHandler(handled, disposed));
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        using var broker = new EventBroker(provider.GetRequiredService<IServiceScopeFactory>());
+        await broker.StartAsync(CancellationToken.None);
+
+        await broker.PublishAsync(new Pinged(1));
+        await handled.Task.WaitAsync(TimeSpan.FromSeconds(30));   // dispatch ran
+        await disposed.Task.WaitAsync(TimeSpan.FromSeconds(30));  // and the scope disposed it via DisposeAsync
+
+        await broker.StopAsync(CancellationToken.None);
+    }
 }

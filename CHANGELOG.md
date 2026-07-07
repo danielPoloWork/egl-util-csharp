@@ -45,6 +45,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `EventBroker` now disposes each per-event DI scope asynchronously (#60). It used a synchronous
+  `using`/`Dispose`, which throws for a resolved service that implements `IAsyncDisposable` but not
+  `IDisposable` — leaking it and logging the already-succeeded dispatch as *failed* on every event. It
+  now uses `await using`/`CreateAsyncScope`, which still disposes plain `IDisposable` services
+  synchronously (strictly safer).
 - A JSON-`null` L2 entry no longer poisons the L1 cache with a null "hit" (#59). `CacheService` now
   treats a deserialized `null` from the distributed level as a miss (it runs the factory and does not
   promote `null` into L1), and `DistributedCacheExtensions.SetAsync` refuses a `null` value — together
