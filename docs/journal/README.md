@@ -17,6 +17,18 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-07 — Fix: assembly scan skips open-generic implementors (#65)](2026/07/2026-07-07-scan-skips-open-generics.md)
+- [2026-07-07 — Fix: EventBroker disposes the dispatch scope synchronously (#60)](2026/07/2026-07-07-eventbroker-async-scope.md)
+- [2026-07-07 — Fix: JSON-null L2 entry poisons L1 with a null hit (#59)](2026/07/2026-07-07-cache-null-l2-miss.md)
+- [2026-07-07 — Fix: idempotent ValidationPipelineBehavior registration (#32)](2026/07/2026-07-07-idempotent-validation-behavior.md)
+- [2026-07-07 — Fix: validate non-positive TTL in GetOrCreateAsync (#34)](2026/07/2026-07-07-cacheservice-validate-ttl.md)
+- [2026-07-07 — Fix: EventBroker self-deadlock on in-handler re-publish (#19)](2026/07/2026-07-07-eventbroker-republish-deadlock.md)
+- [2026-07-07 — Release workflow packs & publishes the NuGet package (#22)](2026/07/2026-07-07-release-pack-and-publish.md)
+- [2026-07-07 — CI: enforce the ≥80% coverage threshold (#24)](2026/07/2026-07-07-ci-enforce-coverage-threshold.md)
+- [2026-07-06 — CI: enforce lockfile presence (follow-up to #23)](2026/07/2026-07-06-ci-enforce-lockfile-presence.md)
+- [2026-07-06 — CI: enforce restore locked mode (#23)](2026/07/2026-07-06-ci-enforce-locked-mode-restore.md)
+- [2026-07-06 — Fix: CacheService breaks against a size-limited IMemoryCache (#20)](2026/07/2026-07-06-fix-cacheservice-size-limited-memorycache.md)
+- [2026-07-06 — Fix: domain events dropped on removed aggregates (#21)](2026/07/2026-07-06-fix-domain-events-dropped-on-delete.md)
 - [2026-07-01 — documentation i18n (zh, ja)](2026/07/2026-07-01-i18n-zh-ja.md)
 - [2026-07-01 — v1.0.0 release](2026/07/2026-07-01-release-v1.0.0.md)
 - [2026-07-01 — Milestone 8: utilities, DI, and 1.0 hardening](2026/07/2026-07-01-utilities-di.md)
