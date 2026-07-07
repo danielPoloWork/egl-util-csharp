@@ -41,7 +41,7 @@ public Result<User> Register(string email) =>
         : Result.Success(new User(Guid.NewGuid(), email));
 ```
 
-一次调用即可完成依赖注入装配——注册这些构建块，并通过程序集扫描注册你的事件处理器、FluentValidation 验证器与规约：
+一次调用即可完成依赖注入装配——注册这些构建块，并通过程序集扫描注册你的事件处理器与 FluentValidation 验证器：
 
 ```csharp
 using It.D4np.Util.Infrastructure;

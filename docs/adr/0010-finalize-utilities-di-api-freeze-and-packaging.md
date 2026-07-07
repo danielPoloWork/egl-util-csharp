@@ -1,6 +1,7 @@
 # ADR-0010: Adopt DI auto-registration and finalize the 1.0 API, coverage, and packaging
 
 - **Status:** Accepted
+- **Superseded in part by:** [ADR-0019](0019-remove-specification-di-auto-registration.md) — the `ISpecification<>` auto-registration decision below is withdrawn; the rest of this ADR stands.
 - **Date:** 2026-07-01
 - **Deciders:** Maintainer
 - **Related:** ADR-0003, ADR-0007, ADR-0008, ADR-0009, spec §2 (requirements 23–25), §3, §5

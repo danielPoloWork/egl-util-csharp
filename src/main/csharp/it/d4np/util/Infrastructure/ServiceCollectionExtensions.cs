@@ -14,13 +14,13 @@ namespace It.D4np.Util.Infrastructure;
 /// <summary>
 /// Dependency-injection wiring for the egl-util-csharp building blocks. <see cref="AddD4npUtil"/>
 /// registers the library's own services and assembly-scans the given assemblies to auto-register the
-/// consumer's event handlers, FluentValidation validators, and specifications.
+/// consumer's event handlers and FluentValidation validators.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the egl-util-csharp services and auto-registers the handlers, validators, and
-    /// specifications discovered in <paramref name="assemblies"/>. Call this once.
+    /// Registers the egl-util-csharp services and auto-registers the event handlers and validators
+    /// discovered in <paramref name="assemblies"/>. Call this once.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -36,10 +36,16 @@ public static class ServiceCollectionExtensions
     /// <see cref="Microsoft.Extensions.Caching.Memory.IMemoryCache"/> and an
     /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> (for
     /// <see cref="CacheService"/>), MediatR itself, and — for event delivery — logging. Assembly
-    /// scanning registers every concrete
-    /// <see cref="IEventHandler{TEvent}"/>, <see cref="IValidator{T}"/>, and
-    /// <see cref="ISpecification{TEntity}"/> as transient; open-generic type definitions are skipped
-    /// (DI cannot construct them). When no assembly is given, the calling assembly is scanned.
+    /// scanning registers every concrete <see cref="IEventHandler{TEvent}"/> and
+    /// <see cref="IValidator{T}"/> as transient; open-generic type definitions are skipped (DI cannot
+    /// construct them). When no assembly is given, the calling assembly is scanned.
+    /// </para>
+    /// <para>
+    /// <see cref="ISpecification{TEntity}"/> implementations are intentionally <em>not</em> registered.
+    /// A specification is a query object constructed with its runtime arguments (see
+    /// <see cref="Specification{TEntity}"/>, whose criteria is set through the constructor), so a
+    /// container registration could not supply those parameters and would break
+    /// <c>ValidateOnBuild</c>; new one up where you use it instead.
     /// </para>
     /// </remarks>
     /// <param name="services">The service collection to add to.</param>
@@ -72,9 +78,12 @@ public static class ServiceCollectionExtensions
         // validator twice per request.
         services.TryAddEnumerable(ServiceDescriptor.Transient(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>)));
 
+        // Specifications are deliberately NOT scanned: they are query objects built with runtime
+        // arguments (Specification<TEntity> sets its criteria via the constructor), so a DI registration
+        // cannot supply those parameters and a parameterized spec breaks ValidateOnBuild (#67). Consumers
+        // new up a specification where they use it.
         RegisterImplementations(services, typeof(IEventHandler<>), toScan);
         RegisterImplementations(services, typeof(IValidator<>), toScan);
-        RegisterImplementations(services, typeof(ISpecification<>), toScan);
 
         return services;
     }
@@ -93,7 +102,7 @@ public static class ServiceCollectionExtensions
             // (`IEventHandler`1[TEvent]`), which still matches the target below, so registering the type
             // against it would make BuildServiceProvider throw ("Cannot instantiate implementation type …")
             // for the entire application. MediatR and FluentValidation skip generic definitions likewise; a
-            // handler/validator/specification must be a closed, new-able type to be auto-registered.
+            // handler or validator must be a closed, new-able type to be auto-registered.
             if (type.IsAbstract || type.IsInterface || type.ContainsGenericParameters)
             {
                 continue;
