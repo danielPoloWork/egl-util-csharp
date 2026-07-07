@@ -45,6 +45,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `CacheService.GetOrCreateAsync` now validates the `ttl` up-front (#34). A non-positive `ttl` (e.g. a
+  deadline already in the past) previously surfaced as an uncontextualised `ArgumentOutOfRangeException`
+  from the entry-options setter — *after* the factory had run and its result was discarded. It now
+  throws `ArgumentOutOfRangeException` with a clear message before touching the caches or the factory,
+  and the strictly-positive constraint is documented on `ICacheService.GetOrCreateAsync`.
 - `EventBroker` no longer self-deadlocks when a handler re-publishes on a full channel (#19). Because
   the single consumer both drains the channel and runs handlers inline, a handler awaiting
   `PublishAsync` under back-pressure blocked forever (only the parked consumer could free a slot). An

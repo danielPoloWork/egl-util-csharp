@@ -220,6 +220,25 @@ public sealed class CacheServiceTests : IDisposable
     }
 
     [Theory]
+    [InlineData(0)]   // TimeSpan.Zero
+    [InlineData(-5)]  // negative (e.g. a deadline already in the past)
+    public async Task GetOrCreateAsync_rejects_a_non_positive_ttl(int ttlSeconds)
+    {
+        var factoryRan = false;
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => _cache.GetOrCreateAsync(
+            "ttl:bad",
+            _ =>
+            {
+                factoryRan = true;
+                return Task.FromResult(1);
+            },
+            TimeSpan.FromSeconds(ttlSeconds)).AsTask());
+
+        Assert.False(factoryRan); // validated up-front, before the factory runs or any level is written
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData(null)]
     public async Task RemoveAsync_rejects_a_null_or_empty_key(string? key)

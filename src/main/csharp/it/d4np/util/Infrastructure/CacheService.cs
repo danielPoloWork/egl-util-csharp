@@ -44,6 +44,7 @@ public sealed class CacheService : ICacheService
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="ttl"/> is specified and not strictly positive.</exception>
     /// <exception cref="System.Text.Json.JsonException">
     /// A stored distributed-cache entry holds malformed JSON, or <typeparamref name="T"/> is not
     /// JSON-serializable. This signals data corruption or a programming error, not expected control flow.
@@ -56,6 +57,14 @@ public sealed class CacheService : ICacheService
     {
         ArgumentException.ThrowIfNullOrEmpty(key);
         ArgumentNullException.ThrowIfNull(factory);
+
+        // A non-positive TTL is invalid: the underlying entry-options setter rejects it, so validate
+        // up-front to fail fast with context — before running the factory or touching either level.
+        if (ttl is { } lifetime && lifetime <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(ttl), ttl, "The cache time-to-live must be a positive duration when specified.");
+        }
 
         // L1 — in-memory. TryGetValue returns a bool, so a cached default(T) is unambiguous.
         if (_memoryCache.TryGetValue(key, out T? cached))
