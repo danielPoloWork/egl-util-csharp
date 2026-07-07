@@ -88,6 +88,22 @@ gh api -X POST repos/$OWNER/$REPO/milestones -f title="v0.0.0" \
   -f state=open -f description="First release slice (Milestone 1)."
 ```
 
+## 6. NuGet publishing secret
+
+The release workflow (`.github/workflows/release.yml`, ADR-0017) pushes to nuget.org **only** when a
+maintainer publishes the drafted GitHub Release. That push needs an nuget.org API key as a repository
+secret; without it the `publish-nuget` job fails loudly rather than silently skipping.
+
+```bash
+# Paste an nuget.org API key scoped to push It.D4np.Util (or set it in the web UI:
+# Settings > Secrets and variables > Actions > New repository secret).
+gh secret set NUGET_API_KEY --repo $OWNER/$REPO
+```
+
+Optional hardening: put the key in a protected **Environment** (`Settings → Environments`) with
+required reviewers and reference it from the `publish-nuget` job, so the push waits for an explicit
+deployment approval on top of the release-publish gate.
+
 ## Re-running
 
 Every command here is idempotent or safely re-runnable. Re-run after changing labels, after a

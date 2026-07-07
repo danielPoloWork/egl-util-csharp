@@ -32,3 +32,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0014](0014-enforce-restore-locked-mode-in-ci.md) | Enforce restore locked mode in CI | Accepted |
 | [0015](0015-enforce-lockfile-presence-in-ci.md) | Enforce lockfile presence in CI | Accepted |
 | [0016](0016-enforce-coverage-threshold-in-ci.md) | Enforce the ≥80% coverage threshold in CI | Accepted |
+| [0017](0017-release-pack-and-publish-nuget.md) | Pack and publish the NuGet package from the release workflow | Accepted |

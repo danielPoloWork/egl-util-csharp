@@ -26,6 +26,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- The release workflow now packs and publishes the NuGet package (#22). On a `v*.*.*` tag it packs the
+  single `It.D4np.Util` package (+ `.snupkg`), asserts the packed version equals the tag, and attaches
+  both to the drafted GitHub Release; when a maintainer publishes that release, it pushes to nuget.org
+  (`--skip-duplicate`) using the `NUGET_API_KEY` secret (ADR-0017). Previously the workflow only built
+  and drafted, so `dotnet add package It.D4np.Util` resolved to nothing. Repo/CI change only; the
+  shipped package contents are unchanged. Requires the `NUGET_API_KEY` secret (see
+  `docs/workflow/github-setup.md`).
 - CI now enforces the ≥80% line-coverage bar (#24). The `quality` job previously collected coverage
   (`--collect:"XPlat Code Coverage"`) but nothing read it; it now runs coverlet.msbuild with
   `/p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total`, so the build fails if total line

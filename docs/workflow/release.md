@@ -27,10 +27,15 @@ pre-1.0 milestone-driven.
 6. **Open the release PR** — *the maintainer does this*. The agent prepares it.
 7. **Merge** — *the maintainer*.
 8. **Tag + draft (carry-through)** — the agent runs `git tag -a v<X.Y.Z> -m "<headline>"` and
-   `git push origin v<X.Y.Z>` immediately after merge; the tag push lets CI open the GitHub Release
-   as a **draft**. The agent always carries the release this far — only **Publish** is the human's.
-9. **Publish** the GitHub Release — *the maintainer* (the deliberate human checkpoint).
-10. **CI builds & attaches artifacts** on the tag push.
+   `git push origin v<X.Y.Z>` immediately after merge; the tag push lets CI **pack** the
+   `It.D4np.Util` package (+ symbols), assert the packed version equals the tag, and open the GitHub
+   Release as a **draft** with the `.nupkg`/`.snupkg` attached. The agent always carries the release
+   this far — only **Publish** is the human's.
+9. **Publish** the GitHub Release — *the maintainer* (the deliberate human checkpoint). Publishing
+   triggers CI to **push the reviewed package to nuget.org** (ADR-0017; requires the `NUGET_API_KEY`
+   secret — see [`github-setup.md`](github-setup.md) §6).
+10. The published version is **immutable** — fix a mistake forward with a new version, never by
+    re-publishing (`--skip-duplicate` makes a re-run idempotent).
 
 ## Boundary
 
@@ -40,7 +45,8 @@ pre-1.0 milestone-driven.
 | Open / merge the release PR | **Human** |
 | Create & push the annotated tag, then the **draft** release (CI drafts it on tag-push) | Agent |
 | Publish the GitHub Release (click **Publish**) | **Human** |
-| Build & attach artifacts | CI |
+| Pack, verify the version, & attach artifacts to the draft (on tag push) | CI |
+| Push the package to nuget.org (on **Publish**) | CI |
 
 Agents never publish releases, never amend or delete published tags, and only delete-and-
 repush an *unpublished* tag whose release run visibly failed.
