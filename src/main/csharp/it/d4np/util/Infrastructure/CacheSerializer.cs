@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace It.D4np.Util.Infrastructure;
 
@@ -10,9 +9,11 @@ namespace It.D4np.Util.Infrastructure;
 /// </summary>
 internal static class CacheSerializer
 {
+    // Note: no DefaultIgnoreCondition. Null properties are written explicitly so a value round-trips
+    // faithfully — omitting them let deserialization resurrect a type's non-null C# defaults, silently
+    // corrupting a cached value (#58, ADR-0021). Compactness comes from Web defaults + no indentation.
     internal static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
     {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = false,
     };
 
