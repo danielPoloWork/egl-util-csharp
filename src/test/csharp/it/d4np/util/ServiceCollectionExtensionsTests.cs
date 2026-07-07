@@ -48,6 +48,19 @@ public class ServiceCollectionExtensionsTests
         public bool IsPagingEnabled => false;
     }
 
+    // Open-generic implementors in the scanned assembly. Regression for #65: the scan must skip these.
+    // GetInterfaces() on the open definition yields the open constructed interface (e.g.
+    // IEventHandler<TEvent>), and registering the definition against it makes BuildServiceProvider throw
+    // "Cannot instantiate implementation type …" for the whole container — regardless of ValidateOnBuild.
+    private sealed class OpenGenericEventHandler<TEvent> : IEventHandler<TEvent>
+        where TEvent : class
+    {
+        public Task HandleAsync(TEvent @event, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class OpenGenericValidator<T> : AbstractValidator<T>;
+
     private static ServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
@@ -169,6 +182,30 @@ public class ServiceCollectionExtensionsTests
         Assert.IsType<SampleEventHandler>(Assert.Single(provider.GetServices<IEventHandler<SampleEvent>>()));
         Assert.Contains(provider.GetServices<IValidator<SampleRequest>>(), validator => validator is SampleValidator);
         Assert.IsType<SampleSpecification>(Assert.Single(provider.GetServices<ISpecification<SampleEntity>>()));
+    }
+
+    [Fact]
+    public async Task Open_generic_implementors_are_skipped_so_the_container_builds()
+    {
+        // Regression for #65: this assembly defines OpenGenericEventHandler<TEvent> and
+        // OpenGenericValidator<T>. Before the fix the scan registered each open definition against its
+        // open constructed interface, so BuildServiceProvider threw "Cannot instantiate implementation
+        // type …" and the entire application container failed to build. They must be skipped instead.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions()));
+        services.AddSingleton<IDistributedCache>(
+            new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions())));
+
+        services.AddD4npUtil(typeof(ServiceCollectionExtensionsTests).Assembly);
+
+        // The open generics were not registered at all.
+        Assert.DoesNotContain(services, descriptor => descriptor.ImplementationType == typeof(OpenGenericEventHandler<>));
+        Assert.DoesNotContain(services, descriptor => descriptor.ImplementationType == typeof(OpenGenericValidator<>));
+
+        // The container builds (pre-fix this threw) and the ordinary closed handler still resolves.
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        Assert.IsType<SampleEventHandler>(Assert.Single(provider.GetServices<IEventHandler<SampleEvent>>()));
     }
 
     [Fact]

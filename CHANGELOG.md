@@ -45,6 +45,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `AddD4npUtil`'s assembly scan now skips open-generic type definitions (#65). An open-generic handler,
+  validator, or specification in a scanned assembly (e.g. `AuditHandler<TEvent> : IEventHandler<TEvent>`)
+  was registered against its open constructed interface, so `BuildServiceProvider` threw an
+  `ArgumentException` ("Cannot instantiate implementation type …") — the entire container failed to build
+  and the application could not start, regardless of `ValidateOnBuild`. The scan now excludes any type
+  with unbound generic parameters (matching MediatR's and FluentValidation's own scanners); only closed,
+  constructible types are auto-registered. No public API change.
 - `EventBroker` now disposes each per-event DI scope asynchronously (#60). It used a synchronous
   `using`/`Dispose`, which throws for a resolved service that implements `IAsyncDisposable` but not
   `IDisposable` — leaking it and logging the already-succeeded dispatch as *failed* on every event. It
