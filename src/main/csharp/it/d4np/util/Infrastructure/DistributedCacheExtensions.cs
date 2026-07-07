@@ -17,9 +17,11 @@ public static class DistributedCacheExtensions
     /// <param name="key">The cache key; must not be <see langword="null"/> or empty.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>
-    /// The deserialised value, or <see langword="default"/> if the key is not present. For a value
-    /// type, an absent key and a stored <c>default(T)</c> both yield <c>default</c>; callers needing to
-    /// tell them apart should use a reference type or a nullable value type.
+    /// The deserialised value, or <see langword="default"/> if the key is not present. An absent key
+    /// and a stored <c>default(T)</c> both yield <c>default</c> — for a value type a stored <c>0</c>,
+    /// and for a reference type a stored JSON <c>null</c> — so an absent key cannot be told apart from a
+    /// stored default. (<see cref="SetAsync"/> refuses to write a <see langword="null"/>, so a stored
+    /// JSON <c>null</c> only arises from another writer.)
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="cache"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is <see langword="null"/> or empty.</exception>
@@ -38,10 +40,10 @@ public static class DistributedCacheExtensions
     /// <typeparam name="T">The value type to serialise.</typeparam>
     /// <param name="cache">The distributed cache; must not be <see langword="null"/>.</param>
     /// <param name="key">The cache key; must not be <see langword="null"/> or empty.</param>
-    /// <param name="value">The value to store.</param>
+    /// <param name="value">The value to store; must not be <see langword="null"/> (a stored JSON <c>null</c> is indistinguishable from an absent key and never cached — matching the <see cref="It.D4np.Util.Application.ICacheService"/> contract).</param>
     /// <param name="options">Optional entry options (expiration); a fresh instance is used when <see langword="null"/>.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="cache"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="cache"/> or <paramref name="value"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is <see langword="null"/> or empty.</exception>
     public static Task SetAsync<T>(
         this IDistributedCache cache,
@@ -52,6 +54,9 @@ public static class DistributedCacheExtensions
     {
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentException.ThrowIfNullOrEmpty(key);
+        // Never store a JSON `null`: it is indistinguishable from an absent key on read and would
+        // otherwise be promoted into CacheService's L1 as a null "hit" (never-cache-null policy).
+        ArgumentNullException.ThrowIfNull(value);
 
         byte[] bytes = CacheSerializer.Serialize(value);
         return cache.SetAsync(key, bytes, options ?? new DistributedCacheEntryOptions(), cancellationToken);
