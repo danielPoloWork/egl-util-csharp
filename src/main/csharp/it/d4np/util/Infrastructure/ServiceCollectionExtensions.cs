@@ -66,8 +66,11 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IEventBroker>(static provider => provider.GetRequiredService<EventBroker>());
         services.AddHostedService(static provider => provider.GetRequiredService<EventBroker>());
 
-        // Run FluentValidation validators as a MediatR pipeline step.
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>));
+        // Run FluentValidation validators as a MediatR pipeline step. TryAddEnumerable (keyed on the
+        // implementation type) keeps this idempotent, so calling AddD4npUtil more than once — e.g. a
+        // library and its host both call it — does not register the behavior twice and run every
+        // validator twice per request.
+        services.TryAddEnumerable(ServiceDescriptor.Transient(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>)));
 
         RegisterImplementations(services, typeof(IEventHandler<>), toScan);
         RegisterImplementations(services, typeof(IValidator<>), toScan);

@@ -120,6 +120,27 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public void Registering_twice_leaves_a_single_validation_behavior()
+    {
+        // Regression for #32: the open-generic pipeline behavior must be registered idempotently, or a
+        // second AddD4npUtil call (library + host) makes MediatR run every validator twice per request.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions()));
+        services.AddSingleton<IDistributedCache>(
+            new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions())));
+
+        services.AddD4npUtil(typeof(ServiceCollectionExtensionsTests).Assembly);
+        services.AddD4npUtil(typeof(ServiceCollectionExtensionsTests).Assembly); // idempotent
+
+        int behaviors = services.Count(descriptor =>
+            descriptor.ServiceType == typeof(IPipelineBehavior<,>)
+            && descriptor.ImplementationType == typeof(ValidationPipelineBehavior<,>));
+
+        Assert.Equal(1, behaviors); // registered once despite two calls, so validators run once
+    }
+
+    [Fact]
     public async Task Core_services_are_singletons()
     {
         await using ServiceProvider provider = BuildProvider();

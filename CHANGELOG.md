@@ -45,6 +45,10 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `AddD4npUtil` now registers the `ValidationPipelineBehavior` idempotently (#32). It used a plain
+  `AddTransient` (the lone non-idempotent registration), so calling `AddD4npUtil` twice — e.g. a library
+  and its host both call it — appended a second descriptor and made MediatR run every FluentValidation
+  validator twice per request. It now uses `TryAddEnumerable`, matching the other registrations.
 - `CacheService.GetOrCreateAsync` now validates the `ttl` up-front (#34). A non-positive `ttl` (e.g. a
   deadline already in the past) previously surfaced as an uncontextualised `ArgumentOutOfRangeException`
   from the entry-options setter — *after* the factory had run and its result was discarded. It now
