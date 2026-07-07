@@ -39,4 +39,18 @@ public class ResultOfTTests
         Assert.True(result.IsFailure);
         Assert.Equal("User.NotFound", result.Error.Code);
     }
+
+    [Fact]
+    public void Success_rejects_a_null_value()
+    {
+        // Regression for #27: the type's premise is "no nulls". A null success would defer a
+        // NullReferenceException to a downstream Value read even though Value is typed non-nullable.
+        Assert.Throws<ArgumentNullException>(() => Result.Success<string>(null!));
+        Assert.Throws<ArgumentNullException>(() => Result.Success<int?>(null));
+
+        // ...including via the implicit value -> Result<TValue> conversion. A typed null reference (not
+        // the null literal, which would bind to the reference type and bypass the operator) exercises it.
+        string? nullValue = null;
+        Assert.Throws<ArgumentNullException>(() => _ = (Result<string>)nullValue!);
+    }
 }
