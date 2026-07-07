@@ -50,8 +50,5 @@ public class ResultTests
         Assert.Throws<ArgumentException>(() => Result.Failure(Error.None));
         Assert.Throws<ArgumentException>(() => Result.Failure(new Error("E1", "real"), Error.None));
         Assert.Throws<ArgumentException>(() => Result.Failure<int>(Error.None));
-
-        // ...including via the implicit Error -> Result<TValue> conversion, which routes through Failure.
-        Assert.Throws<ArgumentException>(() => _ = (Result<int>)Error.None);
     }
 }

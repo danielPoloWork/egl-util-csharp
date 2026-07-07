@@ -24,13 +24,13 @@ public class Result<TValue> : Result
     public TValue Value =>
         IsSuccess ? _value : throw new InvalidOperationException("Cannot access the value of a failed result.");
 
-    /// <summary>Implicitly wraps a value as a successful result.</summary>
+    /// <summary>
+    /// Implicitly wraps a value as a successful result. Failures are created explicitly with
+    /// <see cref="Result.Failure{TValue}(Error[])"/> — there is deliberately no implicit
+    /// <see cref="Error"/> → <see cref="Result{TValue}"/> conversion (it collided with this operator and
+    /// silently turned a <c>Result&lt;object&gt;</c> carrying an error into a failure; ADR-0020).
+    /// </summary>
     /// <param name="value">The success value; must not be <see langword="null"/>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public static implicit operator Result<TValue>(TValue value) => Success(value);
-
-    /// <summary>Implicitly wraps an error as a failed result.</summary>
-    /// <param name="error">The failure error; must not be <see cref="Error.None"/>.</param>
-    /// <exception cref="ArgumentException"><paramref name="error"/> is <see cref="Error.None"/>.</exception>
-    public static implicit operator Result<TValue>(Error error) => Failure<TValue>(error);
 }
