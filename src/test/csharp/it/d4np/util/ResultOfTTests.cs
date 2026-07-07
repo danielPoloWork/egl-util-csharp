@@ -32,12 +32,28 @@ public class ResultOfTTests
     }
 
     [Fact]
-    public void Implicitly_converts_from_an_error_to_failure()
+    public void A_failure_is_created_explicitly_from_an_error()
     {
-        Result<string> result = new Error("User.NotFound", "No such user.");
+        // #28: the implicit Error -> Result<TValue> conversion was removed (it collided with the value
+        // operator); failures are now created with the explicit factory.
+        Result<string> result = Result.Failure<string>(new Error("User.NotFound", "No such user."));
 
         Assert.True(result.IsFailure);
         Assert.Equal("User.NotFound", result.Error.Code);
+    }
+
+    [Fact]
+    public void An_error_assigned_to_a_result_is_a_success_carrying_it()
+    {
+        // Regression for #28: with the implicit Error operator gone, `Result<object> r = error` binds the
+        // value operator and yields a SUCCESS carrying the error object. Previously the more-specific
+        // Error operator won overload resolution and silently produced a failure instead.
+        var error = new Error("E", "m");
+
+        Result<object> result = error;
+
+        Assert.True(result.IsSuccess);
+        Assert.Same(error, result.Value);
     }
 
     [Fact]

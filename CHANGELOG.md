@@ -43,6 +43,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Removed
 
+- **BREAKING:** the implicit `Error` → `Result<TValue>` conversion is removed (#28). It collided with the
+  implicit `TValue` → `Result<TValue>` conversion: `Result<Error>` could not be built from an `Error`
+  (CS0457, ambiguous), and `Result<object> r = someError;` silently bound the `Error` overload and produced
+  a *failure* — inverting an intended success that carries the error as its value. Create failures with the
+  explicit `Result.Failure<TValue>(error)` factory instead (`return someError;` becomes
+  `return Result.Failure<TValue>(error);`). The `TValue` → `Result<TValue>` success conversion is
+  unchanged, so `Result<object> r = someError;` is now a success carrying the error (ADR-0020).
 - `AddD4npUtil` no longer auto-registers `ISpecification<>` implementations from the scanned assemblies
   (#67). A specification is a query object built with its runtime arguments (e.g.
   `OrdersByCustomerSpec(Guid customerId)`), so the scan's `Transient(ISpecification<TEntity>, spec)`
@@ -65,9 +72,8 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   failure whose `Error` equalled `Error.None` — the sentinel documented as carried by *successful*
   results — so a caller using the documented `result.Error == Error.None` success check misclassified a
   genuine failure as success and silently swallowed it. Both `Failure(params Error[])` and its generic
-  overload — and the implicit `Error` → `Result<TValue>` conversion, which routes through them — now
-  throw `ArgumentException` when any supplied error is `Error.None`, so a failure always carries a
-  distinguishable error. No public API change.
+  overload now throw `ArgumentException` when any supplied error is `Error.None`, so a failure always
+  carries a distinguishable error. No public API change.
 - `AddD4npUtil`'s assembly scan now skips open-generic type definitions (#65). An open-generic handler,
   validator, or specification in a scanned assembly (e.g. `AuditHandler<TEvent> : IEventHandler<TEvent>`)
   was registered against its open constructed interface, so `BuildServiceProvider` threw an

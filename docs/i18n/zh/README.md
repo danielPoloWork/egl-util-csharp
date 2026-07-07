@@ -37,7 +37,7 @@ using It.D4np.Util.Domain;
 
 public Result<User> Register(string email) =>
     string.IsNullOrWhiteSpace(email)
-        ? new Error("User.Email.Required", "Email is required.")   // Error 会隐式转换为失败结果
+        ? Result.Failure<User>(new Error("User.Email.Required", "Email is required."))
         : Result.Success(new User(Guid.NewGuid(), email));
 ```
 

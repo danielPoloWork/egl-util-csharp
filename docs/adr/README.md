@@ -35,3 +35,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0017](0017-release-pack-and-publish-nuget.md) | Pack and publish the NuGet package from the release workflow | Accepted |
 | [0018](0018-non-blocking-in-handler-event-publish.md) | Make in-handler event publishing non-blocking to prevent broker self-deadlock | Accepted |
 | [0019](0019-remove-specification-di-auto-registration.md) | Remove ISpecification<> from DI assembly-scan auto-registration | Accepted |
+| [0020](0020-remove-implicit-error-to-result-conversion.md) | Remove the implicit Error → Result<TValue> conversion (breaking) | Accepted |
