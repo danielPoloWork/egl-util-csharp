@@ -62,6 +62,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `Result.Errors` is now a truly read-only view (#85). It was backed by the `Error[]` returned from the
+  factories, so a consumer could downcast `IReadOnlyList<Error>` to `Error[]` — or a subclass could pass a
+  mutable list to the protected constructor and retain a reference — and mutate a supposedly immutable
+  `Result` after construction. The constructor now stores a `ReadOnlyCollection<Error>` over a defensive
+  copy (successes share a single empty instance). The declared `IReadOnlyList<Error>` surface is unchanged.
 - `Result.Success<TValue>` now rejects a `null` value (#27). `Result.Success<TValue>(null)` and the
   implicit `TValue` → `Result<TValue>` conversion previously produced `IsSuccess == true` with a `null`
   `Value`, deferring a `NullReferenceException` far downstream even though `Value` is typed non-nullable
