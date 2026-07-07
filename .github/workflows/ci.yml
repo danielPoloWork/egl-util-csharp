@@ -100,4 +100,7 @@ jobs:
         with: { dotnet-version: '8.0.x' }
       - run: dotnet format --verify-no-changes
       - run: dotnet build -warnaserror
-      - run: dotnet test -c Release --collect:"XPlat Code Coverage"
+      # Enforce the >=80% line-coverage bar (ADR-0010) via coverlet.msbuild — the previous
+      # `--collect:"XPlat Code Coverage"` wrote a Cobertura file that nothing read (issue #24). The
+      # test run fails if total line coverage drops below the threshold (ADR-0016).
+      - run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total

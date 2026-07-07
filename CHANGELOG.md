@@ -26,6 +26,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- CI now enforces the ≥80% line-coverage bar (#24). The `quality` job previously collected coverage
+  (`--collect:"XPlat Code Coverage"`) but nothing read it; it now runs coverlet.msbuild with
+  `/p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total`, so the build fails if total line
+  coverage drops below 80% (currently ~97%). Adds a test-only `coverlet.msbuild` dev dependency
+  (ADR-0016). Repo/CI change only; the shipped package is unchanged.
+
 ### Deprecated
 
 ### Removed
