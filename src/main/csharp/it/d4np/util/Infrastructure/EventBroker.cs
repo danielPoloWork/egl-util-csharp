@@ -21,7 +21,9 @@ namespace It.D4np.Util.Infrastructure;
 /// <b>Threading.</b> <see cref="PublishAsync{TEvent}"/> is safe to call concurrently and does not block on
 /// handler execution (it only awaits enqueueing, which applies bounded back-pressure when the channel is
 /// full). A single consumer processes events sequentially in publish order, so handlers run one event at a
-/// time. Each accepted event is consumed exactly once.
+/// time. Each accepted event is consumed exactly once. A handler that publishes a follow-up event takes a
+/// <b>non-blocking</b> path (it runs on the consumer's flow, so blocking would deadlock): the follow-up is
+/// enqueued if there is room, otherwise <see cref="PublishAsync{TEvent}"/> throws instead of waiting.
 /// </para>
 /// <para>
 /// <b>Resilience.</b> A handler that throws is isolated: the failure is logged (when a logger is supplied)
@@ -42,6 +44,10 @@ public sealed class EventBroker : BackgroundService, IEventBroker
     private readonly Channel<object> _channel;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<EventBroker>? _logger;
+
+    // True on the single consumer's dispatch flow (and the handler calls it awaits). A handler that
+    // re-publishes runs on this flow, so its PublishAsync must not block — see PublishAsync.
+    private readonly AsyncLocal<bool> _dispatching = new();
 
     /// <summary>Creates a broker that resolves handlers from <paramref name="scopeFactory"/>.</summary>
     /// <param name="scopeFactory">The DI scope factory used to resolve handlers per event.</param>
@@ -66,13 +72,40 @@ public sealed class EventBroker : BackgroundService, IEventBroker
 
     /// <inheritdoc />
     /// <remarks>
+    /// <para>
     /// The event is delivered to handlers registered for its <b>runtime</b> type. Throws
     /// <see cref="InvalidOperationException"/> if the broker has stopped and no longer accepts events.
+    /// </para>
+    /// <para>
+    /// <b>Re-entrant (in-handler) publish.</b> A handler runs on the single consumer's flow, which is
+    /// the only thing that drains the channel. If such a re-entrant publish blocked for a free slot
+    /// under back-pressure it would deadlock (the consumer is parked in the handler and cannot drain),
+    /// so an in-handler publish is <b>non-blocking</b>: it enqueues the event if there is room and
+    /// otherwise throws <see cref="InvalidOperationException"/> rather than waiting. A handler doing
+    /// event chaining should tolerate that failure (catch it, or keep chains short and capacity ample).
+    /// External (non-handler) publishers are unaffected and still apply blocking back-pressure.
+    /// </para>
     /// </remarks>
     public async ValueTask PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken = default)
         where TEvent : class
     {
         ArgumentNullException.ThrowIfNull(@event);
+
+        // In-handler re-publish: never block the consumer's own flow (that self-deadlocks). Enqueue if
+        // there is room, else fail fast — the caller (handler) sees the failure instead of hanging.
+        if (_dispatching.Value)
+        {
+            if (!_channel.Writer.TryWrite(@event))
+            {
+                throw new InvalidOperationException(
+                    "A handler could not publish because the event broker's channel would not immediately " +
+                    "accept the event (it was full, or closed during shutdown). An in-handler publish is " +
+                    "non-blocking to avoid deadlocking the single consumer, so it fails fast instead of " +
+                    "waiting — shorten event chains under load or raise the broker capacity.");
+            }
+
+            return;
+        }
 
         try
         {
@@ -116,24 +149,34 @@ public sealed class EventBroker : BackgroundService, IEventBroker
             return;
         }
 
-        foreach (object? handler in handlers)
+        // Mark this flow as "inside dispatch" so a handler's re-entrant PublishAsync takes the
+        // non-blocking path. AsyncLocal flows into the awaited handler calls; reset afterwards.
+        _dispatching.Value = true;
+        try
         {
-            if (handler is null)
+            foreach (object? handler in handlers)
             {
-                continue;
-            }
+                if (handler is null)
+                {
+                    continue;
+                }
 
-            try
-            {
-                // Handlers run to completion with a non-cancelled token; the broker never force-cancels them.
-                await dispatch.Invoke(handler, @event, CancellationToken.None).ConfigureAwait(false);
+                try
+                {
+                    // Handlers run to completion with a non-cancelled token; the broker never force-cancels them.
+                    await dispatch.Invoke(handler, @event, CancellationToken.None).ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    // Isolate failures: one handler must not stop the consumer or its sibling handlers.
+                    _logger?.LogError(
+                        exception, "Event handler {HandlerType} failed for event {EventType}.", handler.GetType(), @event.GetType());
+                }
             }
-            catch (Exception exception)
-            {
-                // Isolate failures: one handler must not stop the consumer or its sibling handlers.
-                _logger?.LogError(
-                    exception, "Event handler {HandlerType} failed for event {EventType}.", handler.GetType(), @event.GetType());
-            }
+        }
+        finally
+        {
+            _dispatching.Value = false;
         }
     }
 

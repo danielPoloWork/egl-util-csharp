@@ -45,6 +45,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `EventBroker` no longer self-deadlocks when a handler re-publishes on a full channel (#19). Because
+  the single consumer both drains the channel and runs handlers inline, a handler awaiting
+  `PublishAsync` under back-pressure blocked forever (only the parked consumer could free a slot). An
+  in-handler publish is now non-blocking: it enqueues if there is room and otherwise throws
+  `InvalidOperationException` instead of waiting, so the broker (and shutdown drain) never hang.
+  External publishers keep their blocking back-pressure (ADR-0018).
 - Domain events raised on an aggregate that is then removed in the same unit of work are no longer
   silently dropped (#21). EF Core detaches `Deleted` entities from the change tracker once
   `SaveChanges` completes, so the post-save `DispatchDomainEventsAsync(this DbContext, …)` overload

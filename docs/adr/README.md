@@ -33,3 +33,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0015](0015-enforce-lockfile-presence-in-ci.md) | Enforce lockfile presence in CI | Accepted |
 | [0016](0016-enforce-coverage-threshold-in-ci.md) | Enforce the ≥80% coverage threshold in CI | Accepted |
 | [0017](0017-release-pack-and-publish-nuget.md) | Pack and publish the NuGet package from the release workflow | Accepted |
+| [0018](0018-non-blocking-in-handler-event-publish.md) | Make in-handler event publishing non-blocking to prevent broker self-deadlock | Accepted |
