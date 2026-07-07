@@ -25,7 +25,8 @@ public class Result<TValue> : Result
         IsSuccess ? _value : throw new InvalidOperationException("Cannot access the value of a failed result.");
 
     /// <summary>Implicitly wraps a value as a successful result.</summary>
-    /// <param name="value">The success value.</param>
+    /// <param name="value">The success value; must not be <see langword="null"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public static implicit operator Result<TValue>(TValue value) => Success(value);
 
     /// <summary>Implicitly wraps an error as a failed result.</summary>

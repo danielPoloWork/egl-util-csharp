@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-07 — Fix: Result.Success rejects a null value (#27)](2026/07/2026-07-07-success-rejects-null.md)
 - [2026-07-07 — Fix: Result.Failure rejects Error.None (#29)](2026/07/2026-07-07-failure-rejects-error-none.md)
 - [2026-07-07 — Fix: assembly scan no longer auto-registers specifications (#67)](2026/07/2026-07-07-scan-drops-specifications.md)
 - [2026-07-07 — Fix: assembly scan skips open-generic implementors (#65)](2026/07/2026-07-07-scan-skips-open-generics.md)

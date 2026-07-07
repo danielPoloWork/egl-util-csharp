@@ -60,9 +60,21 @@ public class Result
 
     /// <summary>Creates a successful result carrying <paramref name="value"/>.</summary>
     /// <typeparam name="TValue">The success value type.</typeparam>
-    /// <param name="value">The success value.</param>
+    /// <param name="value">The success value; must not be <see langword="null"/>.</param>
     /// <returns>A successful <see cref="Result{TValue}"/>.</returns>
-    public static Result<TValue> Success<TValue>(TValue value) => new(value, true, NoErrors);
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+    public static Result<TValue> Success<TValue>(TValue value)
+    {
+        // The type's premise is "no nulls": Value is typed non-nullable, so a null success would defer a
+        // NullReferenceException to a downstream Value read. Reject it up front — including a null
+        // Nullable<T> — with an allocation-free null check (no boxing for value-type successes) (#27).
+        if (value is null)
+        {
+            throw new ArgumentNullException(nameof(value));
+        }
+
+        return new(value, true, NoErrors);
+    }
 
     /// <summary>Creates a failed result of <typeparamref name="TValue"/> carrying the given errors.</summary>
     /// <typeparam name="TValue">The success value type.</typeparam>

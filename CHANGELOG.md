@@ -55,6 +55,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `Result.Success<TValue>` now rejects a `null` value (#27). `Result.Success<TValue>(null)` and the
+  implicit `TValue` → `Result<TValue>` conversion previously produced `IsSuccess == true` with a `null`
+  `Value`, deferring a `NullReferenceException` far downstream even though `Value` is typed non-nullable
+  and the type's premise is "no nulls". `Success<TValue>` (and thus the implicit operator) now throws
+  `ArgumentNullException` for a `null` reference or an empty `Nullable<T>`, using an allocation-free null
+  check that never boxes value-type successes. No public API change.
 - `Result.Failure` now rejects `Error.None` (#29). `Result.Failure(Error.None)` previously produced a
   failure whose `Error` equalled `Error.None` — the sentinel documented as carried by *successful*
   results — so a caller using the documented `result.Error == Error.None` success check misclassified a
