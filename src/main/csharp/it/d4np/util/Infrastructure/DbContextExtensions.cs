@@ -50,10 +50,12 @@ public static class DbContextExtensions
     /// <remarks>
     /// <para>
     /// Delivery is <b>at-least-once</b>: events publish in change-tracking order (then raise-order
-    /// within an aggregate), and an aggregate's buffer is cleared only once all of its events have
-    /// been published. If <paramref name="publish"/> throws, the failing aggregate and every aggregate
-    /// after it keep their events buffered, so a retry re-drives only the undelivered work
-    /// (already-cleared aggregates are not re-published).
+    /// within an aggregate). An aggregate is <b>drained to a fixed point</b> — events a handler raises on
+    /// that aggregate while it is being dispatched are delivered in the same pass — and its buffer is
+    /// cleared only once no further events remain (#30). If <paramref name="publish"/> throws, the failing
+    /// aggregate and every aggregate after it keep their events buffered, so a retry re-drives only the
+    /// undelivered work (already-cleared aggregates are not re-published). A handler that raises events on
+    /// the same aggregate without bound will not terminate.
     /// </para>
     /// <para>
     /// <b>Limitation — events on removed aggregates are lost.</b> This overload re-scans the change
@@ -87,14 +89,8 @@ public static class DbContextExtensions
 
         foreach (IHasDomainEvents aggregate in aggregates)
         {
-            foreach (IDomainEvent domainEvent in aggregate.DomainEvents.ToArray())
-            {
-                await publish(domainEvent, cancellationToken).ConfigureAwait(false);
-            }
-
-            // Clear only after all of this aggregate's events were published (clear-on-success),
-            // so a publish failure leaves undelivered events buffered for a retry.
-            aggregate.ClearDomainEvents();
+            await PublishThenDrainAndClearAsync(
+                aggregate, aggregate.DomainEvents.ToArray(), publish, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -137,10 +133,12 @@ public static class DbContextExtensions
     /// </summary>
     /// <remarks>
     /// Delivery is <b>at-least-once</b>, matching the change-tracker overload: events publish in the
-    /// captured order, and an aggregate's buffer is cleared only once all of its captured events have
-    /// been published. If <paramref name="publish"/> throws, the failing aggregate and every aggregate
-    /// after it stay undelivered, so re-dispatching the <b>same</b> snapshot re-drives only the
-    /// outstanding work (already-cleared aggregates are not re-published).
+    /// captured order, an aggregate is <b>drained to a fixed point</b> (events a handler raises on it
+    /// during dispatch are delivered in the same pass), and its buffer is cleared only once no further
+    /// events remain (#30). If <paramref name="publish"/> throws, the failing aggregate and every
+    /// aggregate after it stay undelivered, so re-dispatching the <b>same</b> snapshot re-drives only the
+    /// outstanding work (already-cleared aggregates are not re-published). A handler that raises events on
+    /// the same aggregate without bound will not terminate.
     /// </remarks>
     /// <param name="snapshot">The snapshot captured before the save via <see cref="CaptureDomainEvents(DbContext)"/>.</param>
     /// <param name="publish">The callback that publishes a single domain event.</param>
@@ -158,15 +156,42 @@ public static class DbContextExtensions
         while (snapshot.Pending.Count > 0)
         {
             CapturedAggregateEvents captured = snapshot.Pending[0];
-            foreach (IDomainEvent domainEvent in captured.Events)
-            {
-                await publish(domainEvent, cancellationToken).ConfigureAwait(false);
-            }
+            await PublishThenDrainAndClearAsync(
+                captured.Aggregate, captured.Events, publish, cancellationToken).ConfigureAwait(false);
 
-            // Clear only after all of this aggregate's captured events were published, then drop it
-            // from the snapshot so a re-dispatch re-drives only the still-undelivered aggregates.
-            captured.Aggregate.ClearDomainEvents();
+            // Drop it from the snapshot only after a successful publish-drain-and-clear, so a re-dispatch
+            // re-drives only the still-undelivered aggregates.
             snapshot.Pending.RemoveAt(0);
         }
+    }
+
+    // Publishes 'batch' in order, then keeps publishing any further events the aggregate accrues while
+    // handlers run — draining to a fixed point — and clears the buffer only once nothing remains, so an
+    // event a handler raises on the same aggregate during dispatch is delivered rather than silently
+    // wiped by the whole-buffer clear (#30, ADR-0022). Published events are tracked by reference so the
+    // clear is deferred until everything — including handler-raised events — has been delivered; on a
+    // publish failure the exception propagates before the clear, leaving the buffer intact for an
+    // at-least-once retry. A handler that raises events on the same aggregate without bound will not
+    // terminate (a consumer error).
+    private static async Task PublishThenDrainAndClearAsync(
+        IHasDomainEvents aggregate,
+        IReadOnlyList<IDomainEvent> batch,
+        Func<IDomainEvent, CancellationToken, Task> publish,
+        CancellationToken cancellationToken)
+    {
+        var published = new HashSet<IDomainEvent>(ReferenceEqualityComparer.Instance);
+        IReadOnlyList<IDomainEvent> next = batch;
+        while (next.Count > 0)
+        {
+            foreach (IDomainEvent domainEvent in next)
+            {
+                await publish(domainEvent, cancellationToken).ConfigureAwait(false);
+                published.Add(domainEvent);
+            }
+
+            next = aggregate.DomainEvents.Where(domainEvent => !published.Contains(domainEvent)).ToArray();
+        }
+
+        aggregate.ClearDomainEvents();
     }
 }

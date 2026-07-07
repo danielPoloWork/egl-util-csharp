@@ -50,6 +50,6 @@ public sealed class DomainEventSnapshot
 }
 
 /// <summary>An aggregate captured with a copy of the events it had raised at snapshot time.</summary>
-/// <param name="Aggregate">The aggregate whose buffer is cleared once its captured events are published.</param>
+/// <param name="Aggregate">The aggregate whose buffer is cleared once it has been drained to a fixed point — its captured events and any events a handler raises on it during dispatch are all published (ADR-0022).</param>
 /// <param name="Events">The events copied from the aggregate at capture time.</param>
 internal sealed record CapturedAggregateEvents(IHasDomainEvents Aggregate, IReadOnlyList<IDomainEvent> Events);

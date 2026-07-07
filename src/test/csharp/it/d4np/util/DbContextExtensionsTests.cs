@@ -93,6 +93,81 @@ public class DbContextExtensionsTests
     }
 
     [Fact]
+    public async Task DispatchDomainEventsAsync_drains_events_a_handler_raises_during_dispatch()
+    {
+        // Regression for #30: a handler that raises a further event on the same aggregate while it is
+        // being dispatched must have that event delivered too, not silently wiped by the clear.
+        using var catalog = Catalog.Create(useSqlite: false);
+        var product = new Product(Guid.NewGuid(), "x", 1, Guid.NewGuid());
+        var first = new ProductCreated(DateTime.UnixEpoch);
+        var followUp = new ProductCreated(DateTime.UnixEpoch.AddDays(1));
+        product.RaiseTestEvent(first);
+        catalog.Context.Products.Add(product);
+
+        var published = new List<IDomainEvent>();
+        var raised = false;
+        await catalog.Context.DispatchDomainEventsAsync((domainEvent, _) =>
+        {
+            published.Add(domainEvent);
+            if (!raised) // dispatching the first event makes a handler raise a follow-up on the aggregate
+            {
+                raised = true;
+                product.RaiseTestEvent(followUp);
+            }
+
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal(new IDomainEvent[] { first, followUp }, published); // both delivered, in order
+        Assert.Empty(product.DomainEvents); // drained to a fixed point, then cleared
+    }
+
+    [Fact]
+    public async Task DispatchDomainEventsAsync_keeps_the_whole_buffer_when_a_publish_fails_mid_drain()
+    {
+        // #30 retry contract for the drain phase: if a handler raises a follow-up and publishing THAT
+        // throws, nothing is cleared — both the delivered event and the undelivered follow-up stay
+        // buffered — and re-dispatch re-drives the whole buffer (at-least-once: the first event is
+        // delivered a second time).
+        using var catalog = Catalog.Create(useSqlite: false);
+        var product = new Product(Guid.NewGuid(), "x", 1, Guid.NewGuid());
+        var first = new ProductCreated(DateTime.UnixEpoch);
+        var followUp = new ProductCreated(DateTime.UnixEpoch.AddDays(1));
+        product.RaiseTestEvent(first);
+        catalog.Context.Products.Add(product);
+
+        var published = new List<IDomainEvent>();
+        var raised = false;
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            catalog.Context.DispatchDomainEventsAsync((domainEvent, _) =>
+            {
+                if (raised)
+                {
+                    throw new InvalidOperationException("publish failed"); // the drained follow-up fails
+                }
+
+                raised = true;
+                published.Add(domainEvent); // `first` delivered
+                product.RaiseTestEvent(followUp); // a handler raises a follow-up on the same aggregate
+                return Task.CompletedTask;
+            }));
+
+        // Nothing cleared: the delivered `first` and the undelivered `followUp` both remain buffered.
+        Assert.Equal(2, product.DomainEvents.Count);
+        Assert.Equal(new IDomainEvent[] { first }, published);
+
+        // Retry (a callback that always succeeds) re-drives the whole buffer.
+        await catalog.Context.DispatchDomainEventsAsync((domainEvent, _) =>
+        {
+            published.Add(domainEvent);
+            return Task.CompletedTask;
+        });
+
+        Assert.Empty(product.DomainEvents); // fully drained and cleared on the successful retry
+        Assert.Equal(new IDomainEvent[] { first, first, followUp }, published); // `first` re-delivered
+    }
+
+    [Fact]
     public void CaptureDomainEvents_snapshots_without_clearing()
     {
         using var catalog = Catalog.Create(useSqlite: false);
@@ -146,6 +221,37 @@ public class DbContextExtensionsTests
         Assert.Equal(new IDomainEvent[] { first, second }, published);
         Assert.Empty(product.DomainEvents); // cleared on success
         Assert.Equal(2, snapshot.Events.Count); // Events reflects the original capture, stable after dispatch
+    }
+
+    [Fact]
+    public async Task Snapshot_dispatch_drains_events_a_handler_raises_during_dispatch()
+    {
+        // Regression for #30 (snapshot overload): a handler raising a follow-up on the aggregate during
+        // dispatch must have it delivered, not wiped by the clear that follows the captured events.
+        using var catalog = Catalog.Create(useSqlite: false);
+        var product = new Product(Guid.NewGuid(), "x", 1, Guid.NewGuid());
+        var first = new ProductCreated(DateTime.UnixEpoch);
+        var followUp = new ProductCreated(DateTime.UnixEpoch.AddDays(1));
+        product.RaiseTestEvent(first);
+        catalog.Context.Products.Add(product);
+
+        DomainEventSnapshot snapshot = catalog.Context.CaptureDomainEvents();
+        var published = new List<IDomainEvent>();
+        var raised = false;
+        await snapshot.DispatchDomainEventsAsync((domainEvent, _) =>
+        {
+            published.Add(domainEvent);
+            if (!raised)
+            {
+                raised = true;
+                product.RaiseTestEvent(followUp);
+            }
+
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal(new IDomainEvent[] { first, followUp }, published); // captured event, then the drained follow-up
+        Assert.Empty(product.DomainEvents); // drained to a fixed point, then cleared
     }
 
     // The #21 bug: an aggregate removed by the save detaches from the change tracker, so the

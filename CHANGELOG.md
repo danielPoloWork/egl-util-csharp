@@ -62,6 +62,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- Domain-event dispatch now drains each aggregate to a fixed point (#30). Both `DispatchDomainEventsAsync`
+  overloads published an aggregate's buffered events and then cleared its *entire* buffer, so an event a
+  handler raised on that aggregate during dispatch (a synchronous publish) was wiped unpublished — silent
+  domain-event loss the at-least-once contract did not cover. Each aggregate is now drained (re-publishing
+  events that appear while handlers run) until none remain, then cleared; the per-aggregate
+  clear-on-success retry semantics are unchanged (ADR-0022, amending ADR-0012). A handler that raises
+  events on the same aggregate without bound will not terminate.
 - The cache serializer no longer corrupts a cached value's null properties (#58). `CacheSerializer` set
   `DefaultIgnoreCondition = WhenWritingNull`, omitting null properties from the stored JSON; on read,
   `System.Text.Json` left an absent property at its C# default, so a type with a non-null property default

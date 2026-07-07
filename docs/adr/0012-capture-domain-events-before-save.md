@@ -1,6 +1,7 @@
 # ADR-0012: Capture domain events before SaveChanges so removed aggregates are not dropped
 
 - **Status:** Accepted
+- **Amended in part by:** [ADR-0022](0022-drain-domain-events-to-a-fixed-point.md) — the delivery contract now drains each aggregate to a fixed point, so events a handler raises on the aggregate during dispatch are delivered too; the at-least-once / clear-on-success semantics below otherwise stand.
 - **Date:** 2026-07-06
 - **Deciders:** Maintainer
 - **Related:** ADR-0006 (amends its domain-event dispatch guidance), spec §2, §5, issue #21
