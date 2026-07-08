@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-08 — Test: strengthen ValueObject equality property tests (#54)](2026/07/2026-07-08-test-valueobject-inequality.md)
 - [2026-07-08 — Test: pin PaginatedList navigation boundaries (#56)](2026/07/2026-07-08-test-paginatedlist-boundaries.md)
 - [2026-07-07 — Test: cover multi-aggregate partial-clear on dispatch (#57)](2026/07/2026-07-07-test-multi-aggregate-partial-clear.md)
 - [2026-07-07 — Fix: drain domain events to a fixed point during dispatch (#30)](2026/07/2026-07-07-drain-domain-events-fixed-point.md)
