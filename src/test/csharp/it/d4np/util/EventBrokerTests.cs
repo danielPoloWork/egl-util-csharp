@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 using It.D4np.Util.Application;
 using It.D4np.Util.Infrastructure;
 
@@ -28,10 +30,26 @@ public class EventBrokerTests
             throw new InvalidOperationException("handler failure");
     }
 
-    private static ServiceProvider BuildProvider(CountingHandler handler)
+    // Records the Sequence of every delivered event (in delivery order) so a test can assert exactly-once
+    // by payload — not just by count — and the single-consumer FIFO order.
+    private sealed class RecordingHandler : IEventHandler<Pinged>
+    {
+        private readonly ConcurrentQueue<int> _sequences = new();
+
+        // Snapshot in delivery order; safe to read once the broker has drained (StopAsync).
+        public IReadOnlyList<int> Sequences => _sequences.ToArray();
+
+        public Task HandleAsync(Pinged @event, CancellationToken cancellationToken = default)
+        {
+            _sequences.Enqueue(@event.Sequence);
+            return Task.CompletedTask;
+        }
+    }
+
+    private static ServiceProvider BuildProvider(IEventHandler<Pinged> handler)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IEventHandler<Pinged>>(handler);
+        services.AddSingleton(handler);
         return services.BuildServiceProvider();
     }
 
@@ -164,7 +182,8 @@ public class EventBrokerTests
     {
         const int publishers = 8;
         const int perPublisher = 500;
-        var handler = new CountingHandler();
+        const int total = publishers * perPublisher;
+        var handler = new RecordingHandler();
         await using ServiceProvider provider = BuildProvider(handler);
 
         // Small capacity so publishers must wait on back-pressure, exercising the bounded channel.
@@ -181,7 +200,32 @@ public class EventBrokerTests
 
         await broker.StopAsync(CancellationToken.None); // drains every queued event before returning
 
-        Assert.Equal(publishers * perPublisher, handler.Count);
+        // Exactly once by payload, not just by count: sorted, the delivered sequence numbers are exactly
+        // 0..total-1. A single sorted-sequence comparison proves both no-loss and no-duplicate — a defect
+        // that duplicates one event and drops another (net count unchanged) shifts the sorted sequence and
+        // is caught, unlike the old count-only assertion.
+        Assert.Equal(Enumerable.Range(0, total), handler.Sequences.OrderBy(sequence => sequence));
+    }
+
+    [Fact]
+    public async Task Delivers_events_from_a_single_publisher_in_publish_order()
+    {
+        const int count = 500;
+        var handler = new RecordingHandler();
+        await using ServiceProvider provider = BuildProvider(handler);
+        using var broker = new EventBroker(provider.GetRequiredService<IServiceScopeFactory>());
+        await broker.StartAsync(CancellationToken.None);
+
+        for (int i = 0; i < count; i++)
+        {
+            await broker.PublishAsync(new Pinged(i));
+        }
+
+        await broker.StopAsync(CancellationToken.None);
+
+        // The single consumer processes events sequentially in publish order (the documented FIFO
+        // contract): one publisher's events are delivered exactly in the order they were published.
+        Assert.Equal(Enumerable.Range(0, count), handler.Sequences);
     }
 
     [Fact]

@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-08 — Test: verify exactly-once by payload + FIFO order (#103)](2026/07/2026-07-08-test-exactly-once-payload.md)
 - [2026-07-08 — Test: make the DateTimeProvider test monotonic-safe (#104)](2026/07/2026-07-08-test-datetimeprovider-monotonic-safe.md)
 - [2026-07-08 — Test: strengthen ValueObject equality property tests (#54)](2026/07/2026-07-08-test-valueobject-inequality.md)
 - [2026-07-08 — Test: pin PaginatedList navigation boundaries (#56)](2026/07/2026-07-08-test-paginatedlist-boundaries.md)
