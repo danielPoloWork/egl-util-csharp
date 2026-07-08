@@ -45,6 +45,41 @@ public class PaginatedListTests
     }
 
     [Fact]
+    public void Overrun_page_index_beyond_the_last_page_has_a_previous_but_no_next()
+    {
+        // #56: pageIndex > TotalPages is accepted by the ctor; pin the navigation in that state.
+        var page = new PaginatedList<int>([], pageIndex: 5, pageSize: 3, totalCount: 10);
+
+        Assert.Equal(4, page.TotalPages); // ceil(10 / 3)
+        Assert.True(page.HasPrevious); // pages precede an overrun page
+        Assert.False(page.HasNext); // nothing follows the last page
+    }
+
+    [Fact]
+    public void Last_page_on_an_exact_multiple_has_no_next()
+    {
+        // #56: exact last-page edge (totalCount an exact multiple of pageSize) — guards an off-by-one in
+        // HasNext (PageIndex < TotalPages, not <=).
+        var page = new PaginatedList<int>([7, 8, 9], pageIndex: 3, pageSize: 3, totalCount: 9);
+
+        Assert.Equal(3, page.TotalPages); // ceil(9 / 3)
+        Assert.True(page.HasPrevious);
+        Assert.False(page.HasNext); // page 3 of 3 is the last
+    }
+
+    [Fact]
+    public void Empty_result_beyond_the_first_page_has_a_previous_but_no_next()
+    {
+        // #56: totalCount == 0 (TotalPages == 0) with pageIndex > 1 — HasPrevious follows purely from
+        // PageIndex, HasNext from PageIndex < TotalPages (0), so this pins the derived boundary.
+        var page = new PaginatedList<int>([], pageIndex: 2, pageSize: 20, totalCount: 0);
+
+        Assert.Equal(0, page.TotalPages);
+        Assert.True(page.HasPrevious);
+        Assert.False(page.HasNext);
+    }
+
+    [Fact]
     public void Rejects_null_items()
     {
         Assert.Throws<ArgumentNullException>(() => new PaginatedList<int>(null!, 1, 10, 0));
