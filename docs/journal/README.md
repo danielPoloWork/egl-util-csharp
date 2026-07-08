@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-07 — Test: cover multi-aggregate partial-clear on dispatch (#57)](2026/07/2026-07-07-test-multi-aggregate-partial-clear.md)
 - [2026-07-07 — Fix: drain domain events to a fixed point during dispatch (#30)](2026/07/2026-07-07-drain-domain-events-fixed-point.md)
 - [2026-07-07 — Fix: cache serializer preserves null properties (#58)](2026/07/2026-07-07-cache-null-property-roundtrip.md)
 - [2026-07-07 — Fix: Result.Errors is a truly read-only view (#85)](2026/07/2026-07-07-immutable-result-errors.md)
