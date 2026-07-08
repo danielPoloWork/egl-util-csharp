@@ -192,6 +192,25 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public async Task Scans_the_calling_assembly_when_no_assembly_is_given()
+    {
+        // #102: AddD4npUtil() with no arguments falls back to Assembly.GetCallingAssembly() — here the
+        // test assembly — and scans it. Every other test passes the assembly explicitly, so this is the
+        // only coverage of the documented zero-argument default-scan path.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions()));
+        services.AddSingleton<IDistributedCache>(
+            new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions())));
+
+        services.AddD4npUtil(); // no assemblies → the calling (test) assembly is scanned
+
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        Assert.IsType<SampleEventHandler>(Assert.Single(provider.GetServices<IEventHandler<SampleEvent>>()));
+        Assert.Contains(provider.GetServices<IValidator<SampleRequest>>(), validator => validator is SampleValidator);
+    }
+
+    [Fact]
     public async Task Specifications_are_not_auto_registered()
     {
         // Regression for #67: specifications are query objects built with runtime arguments (e.g.
