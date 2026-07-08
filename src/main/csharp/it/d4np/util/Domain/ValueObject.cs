@@ -12,6 +12,14 @@ public abstract class ValueObject : IEquatable<ValueObject>
     /// Returns the components that define this value object's value, in a stable order. Both
     /// equality and hashing are derived from this sequence; a component may be <see langword="null"/>.
     /// </summary>
+    /// <remarks>
+    /// Each component is compared with its <b>default</b> equality — reference equality unless the
+    /// component's type overrides <see cref="object.Equals(object)"/>. A collection yielded as a single
+    /// component (e.g. <c>yield return _tags;</c> where <c>_tags</c> is a <c>List&lt;string&gt;</c>)
+    /// therefore compares by reference, so two otherwise-equal value objects holding distinct list
+    /// instances compare unequal and hash differently. Yield the collection's <i>elements</i> individually
+    /// (<c>foreach (var tag in _tags) yield return tag;</c>) or wrap them in a structurally-equal type.
+    /// </remarks>
     /// <returns>The ordered equality components.</returns>
     protected abstract IEnumerable<object?> GetEqualityComponents();
 
