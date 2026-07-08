@@ -74,6 +74,57 @@ public class ValidationPipelineBehaviorTests
     }
 
     [Fact]
+    public async Task Aggregates_failures_from_validators_running_genuinely_concurrently_over_separate_contexts()
+    {
+        // Regression for #52: the behavior runs every validator via Task.WhenAll, and a ValidationContext
+        // is not safe for concurrent use. Each round exercises genuinely-overlapping async validators (each
+        // awaits a barrier until all have entered), so if they shared one context a race would surface as
+        // lost or duplicated failures. With a fresh context per validator every distinct failure aggregates
+        // exactly once. This guards a data race — against the pre-fix shared-context code the k failures
+        // nondeterministically collapse onto one validator's message — so it repeats over many rounds: any
+        // single round may miss the race window, but a re-regression is caught with near-certainty across all.
+        for (var round = 0; round < 32; round++)
+        {
+            await AssertConcurrentValidatorsEachAggregateTheirOwnFailure();
+        }
+    }
+
+    private static async Task AssertConcurrentValidatorsEachAggregateTheirOwnFailure()
+    {
+        const int k = 8;
+        var entered = 0;
+        var allEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        IValidator<CreateUser> GatedValidator(int index)
+        {
+            var validator = new InlineValidator<CreateUser>();
+            validator.RuleFor(request => request.Email).MustAsync(async (_, _) =>
+            {
+                if (Interlocked.Increment(ref entered) == k)
+                {
+                    allEntered.SetResult(); // release only once all k validators are concurrently in-flight
+                }
+
+                await allEntered.Task.ConfigureAwait(false);
+                return false; // every validator fails, with its own distinct message
+            }).WithMessage("fail-" + index);
+            return validator;
+        }
+
+        IValidator<CreateUser>[] validators = Enumerable.Range(0, k).Select(GatedValidator).ToArray();
+        var behavior = new ValidationPipelineBehavior<CreateUser, string>(validators);
+
+        ValidationException exception = await Assert.ThrowsAsync<ValidationException>(
+            () => behavior.Handle(new CreateUser("user@example.com"), _ => Task.FromResult("created"), CancellationToken.None));
+
+        // All k validators overlapped, and every distinct failure survived aggregation over its own context.
+        Assert.Equal(k, entered);
+        Assert.Equal(
+            Enumerable.Range(0, k).Select(index => "fail-" + index).OrderBy(message => message),
+            exception.Errors.Select(failure => failure.ErrorMessage).OrderBy(message => message));
+    }
+
+    [Fact]
     public async Task Passes_through_when_no_validators_are_registered()
     {
         ValidationPipelineBehavior<CreateUser, string> behavior = Behavior();

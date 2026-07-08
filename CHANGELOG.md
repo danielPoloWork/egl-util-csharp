@@ -68,6 +68,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `ValidationPipelineBehavior` no longer shares one `ValidationContext` across concurrently-running
+  validators (#52). It validated via `Task.WhenAll` over a single `ValidationContext<TRequest>`, but a
+  `ValidationContext` is not safe for concurrent use, so validators doing genuinely-async work overlapped
+  and corrupted each other's failures — the aggregated failures were nondeterministically lost or
+  duplicated (synchronous validators, which never overlap, were unaffected). Each validator now runs
+  against its own `ValidationContext<TRequest>`; execution stays parallel and every failure aggregates
+  correctly. No public-API change.
 - Domain-event dispatch now drains each aggregate to a fixed point (#30). Both `DispatchDomainEventsAsync`
   overloads published an aggregate's buffered events and then cleared its *entire* buffer, so an event a
   handler raised on that aggregate during dispatch (a synchronous publish) was wiped unpublished — silent
