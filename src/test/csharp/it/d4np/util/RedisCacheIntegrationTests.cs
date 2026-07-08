@@ -18,6 +18,7 @@ public sealed class RedisCacheIntegrationTests : IAsyncLifetime
 {
     private RedisContainer? _container;
     private bool _dockerAvailable;
+    private Exception? _startupFailure;
 
     public async Task InitializeAsync()
     {
@@ -29,11 +30,30 @@ public sealed class RedisCacheIntegrationTests : IAsyncLifetime
             await _container.StartAsync();
             _dockerAvailable = true;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            // Docker is not reachable on this host; the Redis tests below skip.
+            // Container start failed. Usually Docker is simply absent (the tests below skip), but it could
+            // also be a real regression (bad image tag, a Testcontainers break); capture it so
+            // SkipOrFailIfNoRedis can fail loudly under REQUIRE_DOCKER instead of hiding it as a skip (#100).
+            _startupFailure = exception;
             _dockerAvailable = false;
         }
+    }
+
+    // Skips when Docker is genuinely unavailable, but FAILS when REQUIRE_DOCKER=1 (set on the CI leg where
+    // Docker is present) — so a container-start regression can no longer silently downgrade the only
+    // real-Redis coverage to a skip while the pipeline stays green (#100).
+    private void SkipOrFailIfNoRedis()
+    {
+        if (!_dockerAvailable && Environment.GetEnvironmentVariable("REQUIRE_DOCKER") == "1")
+        {
+            throw new InvalidOperationException(
+                "REQUIRE_DOCKER=1 but the Testcontainers Redis container did not start, so the real-Redis " +
+                "integration tests did not run — fix Docker/Testcontainers rather than letting coverage vanish.",
+                _startupFailure);
+        }
+
+        Skip.IfNot(_dockerAvailable, "Docker is not available; skipping the Testcontainers Redis test.");
     }
 
     public async Task DisposeAsync()
@@ -52,7 +72,7 @@ public sealed class RedisCacheIntegrationTests : IAsyncLifetime
     [SkippableFact]
     public async Task DistributedCacheExtensions_round_trip_against_Redis()
     {
-        Skip.IfNot(_dockerAvailable, "Docker is not available; skipping the Testcontainers Redis test.");
+        SkipOrFailIfNoRedis();
 
         IDistributedCache cache = NewRedisCache();
         var value = new Sample(42, "answer");
@@ -67,7 +87,7 @@ public sealed class RedisCacheIntegrationTests : IAsyncLifetime
     [SkippableFact]
     public async Task CacheService_two_level_read_through_and_invalidation_against_Redis()
     {
-        Skip.IfNot(_dockerAvailable, "Docker is not available; skipping the Testcontainers Redis test.");
+        SkipOrFailIfNoRedis();
 
         using var l1 = new MemoryCache(new MemoryCacheOptions());
         IDistributedCache redis = NewRedisCache();
@@ -99,7 +119,7 @@ public sealed class RedisCacheIntegrationTests : IAsyncLifetime
     [SkippableFact]
     public async Task CacheService_expires_a_key_after_its_ttl_against_Redis()
     {
-        Skip.IfNot(_dockerAvailable, "Docker is not available; skipping the Testcontainers Redis test.");
+        SkipOrFailIfNoRedis();
 
         using var l1 = new MemoryCache(new MemoryCacheOptions());
         IDistributedCache redis = NewRedisCache();

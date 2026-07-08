@@ -48,6 +48,12 @@ jobs:
 
       - name: Test
         shell: bash
+        # Fail (not silently skip) the Testcontainers Redis integration tests on the Docker-capable leg,
+        # so the only real-Redis coverage cannot vanish unnoticed after a container-start regression (a bad
+        # image tag, a Testcontainers break) (#100). Docker is present on the ubuntu runner but not on the
+        # windows/macos runners, where those tests still skip.
+        env:
+          REQUIRE_DOCKER: ${{ matrix.os == 'ubuntu-24.04' && '1' || '' }}
         run: dotnet test -c Release
 
   # ---------------------------------------------------------------------------
