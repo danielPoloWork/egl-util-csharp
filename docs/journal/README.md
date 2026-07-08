@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-08 — Test: broker per-event scope, runtime-type dispatch, end-to-end (#99)](2026/07/2026-07-08-test-broker-scope-dispatch-e2e.md)
 - [2026-07-08 — Test: cover AddD4npUtil's zero-argument default scan (#102)](2026/07/2026-07-08-test-addd4nputil-default-scan.md)
 - [2026-07-08 — Test: cover EventBroker post-shutdown rejection and drain (#55)](2026/07/2026-07-08-test-eventbroker-shutdown.md)
 - [2026-07-08 — Test: verify exactly-once by payload + FIFO order (#103)](2026/07/2026-07-08-test-exactly-once-payload.md)
