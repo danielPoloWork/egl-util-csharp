@@ -53,6 +53,11 @@ the `Microsoft.Extensions` abstractions where possible.
 - **Serialising cache-stampede protection (per-key lock).** Deferred — under concurrent misses for the
   same key the factory may run more than once (last write wins); this is documented on `CacheService`
   and can be added later without an API change.
+- **A cross-node L1 invalidation bus (e.g. Redis pub/sub on removal).** Deferred — it would let a
+  `RemoveAsync` evict peers' L1 immediately rather than waiting out their TTL, but it adds a broadcast
+  dependency and delivery-failure semantics the minimal spec surface does not require. The documented
+  bounded-`ttl` guidance caps staleness without it, and it can be added later as opt-in without changing
+  the `ICacheService` contract.
 - **An embedded/mock Redis instead of Testcontainers.** Rejected — the spec mandates a real Redis via
   Testcontainers; the Docker-gated skip keeps the matrix green where Docker is absent.
 
@@ -67,6 +72,11 @@ the `Microsoft.Extensions` abstractions where possible.
   `CacheService` are interchangeable because they share `CacheSerializer`.
 - DI wiring (registering `ICacheService`, `IMemoryCache`, and a distributed cache) is deferred to the
   Milestone 8 DI helper, consistent with ADR-0007 and ADR-0008.
+- **L1 is per process; cross-node invalidation is not provided.** `RemoveAsync` and writes update the
+  caller's L1 and the shared L2, but no channel invalidates other instances' L1, so a peer serves its own
+  L1 copy until that entry expires or is evicted (indefinitely with `ttl = null`). This is expected for a
+  two-level cache without an invalidation bus; a bounded per-call `ttl` caps the staleness window. This is
+  documented on `CacheService` and `ICacheService.RemoveAsync`.
 - Adopts the **Proxy** (Structural) pattern; catalogued.
 
 ## References

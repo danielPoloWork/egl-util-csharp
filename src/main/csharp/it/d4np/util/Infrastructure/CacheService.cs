@@ -25,6 +25,16 @@ namespace It.D4np.Util.Infrastructure;
 /// When the cache is size-limited, its <c>SizeLimit</c> therefore bounds the <b>number</b> of
 /// entries this service keeps in L1.
 /// </para>
+/// <para>
+/// <b>Cross-node coherence.</b> L1 is <b>per process</b>; only L2 is shared. A write or
+/// <see cref="RemoveAsync"/> updates the calling process's L1 and the shared L2, but there is no
+/// invalidation channel to other instances, so a peer keeps serving its own L1 copy until that entry
+/// expires or is evicted — indefinitely if it was cached with <c>ttl = null</c>. This is the expected
+/// behaviour of a two-level cache with no invalidation bus, not a defect. In a multi-instance
+/// deployment pass a <b>bounded</b> <c>ttl</c> so every L1 entry self-expires and the staleness window
+/// is capped; a removal or update is only guaranteed to be observed everywhere once each instance's L1
+/// entry has expired or been evicted. See ADR-0009.
+/// </para>
 /// </remarks>
 public sealed class CacheService : ICacheService
 {

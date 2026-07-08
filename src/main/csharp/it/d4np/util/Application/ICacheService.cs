@@ -42,6 +42,13 @@ public interface ICacheService
         CancellationToken cancellationToken = default);
 
     /// <summary>Invalidates <paramref name="key"/> at both cache levels.</summary>
+    /// <remarks>
+    /// This removes the entry from the calling instance's in-memory L1 and the shared distributed L2. It
+    /// does <b>not</b> invalidate other instances' L1, which keep serving their own copy until that entry
+    /// expires or is evicted (with no TTL, until it is evicted or explicitly removed) — so in a
+    /// multi-instance deployment cache with a bounded <c>ttl</c> to cap the cross-node staleness window.
+    /// For the built-in <c>CacheService</c> see its remarks and ADR-0009.
+    /// </remarks>
     /// <param name="key">The cache key to remove; must not be <see langword="null"/> or empty.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <exception cref="ArgumentException"><paramref name="key"/> is <see langword="null"/> or empty.</exception>
