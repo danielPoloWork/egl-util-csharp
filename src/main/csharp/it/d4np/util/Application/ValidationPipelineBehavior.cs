@@ -34,6 +34,11 @@ public sealed class ValidationPipelineBehavior<TRequest, TResponse> : IPipelineB
     /// Validates <paramref name="request"/> with every registered validator and either short-circuits
     /// with a <see cref="ValidationException"/> or delegates to the next step in the pipeline.
     /// </summary>
+    /// <remarks>
+    /// The validators run concurrently, each against its <b>own</b> <c>ValidationContext</c> — a context
+    /// is not safe for concurrent use, so a shared one would let genuinely-async validators corrupt each
+    /// other's failures. All reported failures are aggregated into a single <see cref="ValidationException"/>.
+    /// </remarks>
     /// <param name="request">The incoming request to validate.</param>
     /// <param name="next">The next delegate in the pipeline; must not be <see langword="null"/>.</param>
     /// <param name="cancellationToken">A token to cancel validation and downstream handling.</param>
@@ -52,9 +57,12 @@ public sealed class ValidationPipelineBehavior<TRequest, TResponse> : IPipelineB
             return await next(cancellationToken).ConfigureAwait(false);
         }
 
-        var context = new ValidationContext<TRequest>(request);
+        // Each validator gets its OWN ValidationContext. The validators run concurrently via
+        // Task.WhenAll, and a ValidationContext is not safe for concurrent use — sharing a single instance
+        // lets genuinely-async validators corrupt each other's failures via the context's shared state (#52).
         ValidationResult[] results = await Task.WhenAll(
-            _validators.Select(validator => validator.ValidateAsync(context, cancellationToken))).ConfigureAwait(false);
+            _validators.Select(validator =>
+                validator.ValidateAsync(new ValidationContext<TRequest>(request), cancellationToken))).ConfigureAwait(false);
 
         List<ValidationFailure> failures = results
             .Where(result => !result.IsValid)
