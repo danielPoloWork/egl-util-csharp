@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-08 — docs: cross-node L1 staleness after RemoveAsync (#42)](journal/2026/07/2026-07-08-docs-cache-cross-node-l1-staleness.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-08 — docs: IDomainEvent.OccurredOnUtc DateTimeKind contract (#98)](journal/2026/07/2026-07-08-docs-idomainevent-datetimekind.md).
 
 ---
 

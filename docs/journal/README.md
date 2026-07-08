@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-08 — Docs: IDomainEvent.OccurredOnUtc DateTimeKind contract (#98)](2026/07/2026-07-08-docs-idomainevent-datetimekind.md)
 - [2026-07-08 — Docs: cross-node L1 staleness after RemoveAsync (#42)](2026/07/2026-07-08-docs-cache-cross-node-l1-staleness.md)
 - [2026-07-08 — Docs: AggregateRoot thread-confinement contract (#46)](2026/07/2026-07-08-docs-aggregateroot-thread-confinement.md)
 - [2026-07-08 — Docs: ValueObject collection-component equality caveat (#45)](2026/07/2026-07-08-docs-valueobject-collection-equality.md)
