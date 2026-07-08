@@ -310,6 +310,48 @@ public sealed class CacheServiceTests : IDisposable
         Assert.Null(l2.LastOptions.AbsoluteExpiration);
     }
 
+    [Fact]
+    public async Task GetOrCreateAsync_under_concurrent_misses_runs_the_factory_per_call_and_converges_to_one_value()
+    {
+        // #51: the documented concurrent-miss contract — CacheService does NOT serialise concurrent misses
+        // for the same key, so the factory may run more than once (last write wins, one coherent cached
+        // value). A barrier forces all N calls past the L1/L2 miss check before any of them writes, so the
+        // hazard is exercised deterministically rather than relying on a wall-clock race.
+        const int n = 16;
+        var calls = 0;
+        var barrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Task<Widget?> Invoke() => _cache.GetOrCreateAsync<Widget>("hot", async _ =>
+        {
+            int id = Interlocked.Increment(ref calls);
+            if (id == n)
+            {
+                barrier.SetResult(); // the Nth miss releases them all — every call is now past the miss check
+            }
+
+            await barrier.Task.ConfigureAwait(false);
+            return new Widget(id, "v" + id);
+        }).AsTask();
+
+        Widget?[] results = await Task.WhenAll(Enumerable.Range(0, n).Select(_ => Invoke()));
+
+        // Every call missed and ran its own factory (not serialised), each returning its own distinct value.
+        Assert.Equal(n, calls);
+        Assert.Equal(Enumerable.Range(1, n), results.Select(widget => widget!.Id).OrderBy(id => id));
+
+        // The storm converged to a single coherent cached value: later reads hit the cache (the factory must
+        // not run again) and return one of the produced values, stably.
+        Widget? served = await _cache.GetOrCreateAsync<Widget>(
+            "hot", _ => throw new InvalidOperationException("post-storm read must hit L1; the factory must not re-run"));
+        Widget? servedAgain = await _cache.GetOrCreateAsync<Widget>(
+            "hot", _ => throw new InvalidOperationException("post-storm read must hit L1; the factory must not re-run"));
+
+        Assert.Equal(n, calls); // unchanged — the coherent reads were cache hits
+        Assert.NotNull(served);
+        Assert.InRange(served!.Id, 1, n);
+        Assert.Equal(served, servedAgain);
+    }
+
     // Always-miss IMemoryCache that captures the options of the last entry created, so a test can assert
     // exactly what expiration CacheService applied to L1 without waiting for a clock.
     private sealed class CapturingMemoryCache : IMemoryCache

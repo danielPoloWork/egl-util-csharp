@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-08 — Test: CacheService concurrent-miss last-write-wins coverage (#51)](2026/07/2026-07-08-test-cacheservice-concurrent-miss.md)
 - [2026-07-08 — Docs: SECURITY.md supported-versions + maintenance.md support window (#94)](2026/07/2026-07-08-docs-security-policy-supported-window.md)
 - [2026-07-08 — Docs: IDomainEvent.OccurredOnUtc DateTimeKind contract (#98)](2026/07/2026-07-08-docs-idomainevent-datetimekind.md)
 - [2026-07-08 — Docs: cross-node L1 staleness after RemoveAsync (#42)](2026/07/2026-07-08-docs-cache-cross-node-l1-staleness.md)
