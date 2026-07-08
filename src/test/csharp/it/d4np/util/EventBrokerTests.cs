@@ -367,4 +367,135 @@ public class EventBrokerTests
 
         await broker.StopAsync(CancellationToken.None);
     }
+
+    // --- #99: per-event DI scope, runtime-type dispatch, no-handler survival, end-to-end wiring ---
+
+    private sealed class ScopeTracker
+    {
+        public ConcurrentBag<ScopedDependency> Created { get; } = [];
+
+        public ConcurrentBag<ScopedDependency> Disposed { get; } = [];
+    }
+
+    private sealed class ScopedDependency : IDisposable
+    {
+        private readonly ScopeTracker _tracker;
+
+        public ScopedDependency(ScopeTracker tracker)
+        {
+            _tracker = tracker;
+            tracker.Created.Add(this);
+        }
+
+        public void Dispose() => _tracker.Disposed.Add(this);
+    }
+
+    // A scoped handler that depends on a scoped IDisposable, so resolving it in the per-event scope both
+    // creates the dependency and lets scope disposal dispose it.
+    private sealed class ScopedHandler : IEventHandler<Pinged>
+    {
+        public ScopedHandler(ScopedDependency dependency) => _ = dependency;
+
+        public Task HandleAsync(Pinged @event, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed record Unhandled(int Value);
+
+    private sealed record E2E(int Value);
+
+    private sealed class E2ESignal
+    {
+        public TaskCompletionSource<int> Handled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    // A transient handler the assembly scan will register, resolving a singleton signal so DI can build it.
+    private sealed class E2EHandler : IEventHandler<E2E>
+    {
+        private readonly E2ESignal _signal;
+
+        public E2EHandler(E2ESignal signal) => _signal = signal;
+
+        public Task HandleAsync(E2E @event, CancellationToken cancellationToken = default)
+        {
+            _signal.Handled.TrySetResult(@event.Value);
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task Resolves_a_fresh_scope_per_event_and_disposes_it()
+    {
+        // #99: each event is dispatched in its own DI scope, so a scoped dependency is created fresh per
+        // event and disposed when that event's scope closes — not reused from the root provider.
+        var tracker = new ScopeTracker();
+        var services = new ServiceCollection();
+        services.AddSingleton(tracker);
+        services.AddScoped<ScopedDependency>();
+        services.AddScoped<IEventHandler<Pinged>, ScopedHandler>();
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        using var broker = new EventBroker(provider.GetRequiredService<IServiceScopeFactory>());
+        await broker.StartAsync(CancellationToken.None);
+
+        await broker.PublishAsync(new Pinged(1));
+        await broker.PublishAsync(new Pinged(2));
+        await broker.StopAsync(CancellationToken.None); // drains both; each per-event scope is disposed
+
+        Assert.Equal(2, tracker.Created.Count); // a fresh dependency per event (each ctor adds a new instance), not one shared
+        Assert.Equal(2, tracker.Disposed.Count); // each per-event scope disposed its dependency
+    }
+
+    [Fact]
+    public async Task Dispatches_by_the_events_runtime_type_not_its_static_type()
+    {
+        // #99: publishing through a base static type must resolve handlers by the RUNTIME type. The static
+        // type here is object, but the runtime type is Pinged, so the Pinged handler runs.
+        var handler = new CountingHandler();
+        await using ServiceProvider provider = BuildProvider(handler);
+        using var broker = new EventBroker(provider.GetRequiredService<IServiceScopeFactory>());
+        await broker.StartAsync(CancellationToken.None);
+
+        object baseTyped = new Pinged(1);
+        await broker.PublishAsync(baseTyped); // PublishAsync<object>(Pinged) — dispatched by runtime type
+        await broker.StopAsync(CancellationToken.None);
+
+        Assert.Equal(1, handler.Count);
+    }
+
+    [Fact]
+    public async Task An_event_with_no_registered_handler_does_not_stop_later_delivery()
+    {
+        // #99: an event type with no registered handler is a no-op (empty handler set); the consumer
+        // survives and a later event that does have a handler still delivers.
+        var handler = new CountingHandler(); // registered for Pinged only
+        await using ServiceProvider provider = BuildProvider(handler);
+        using var broker = new EventBroker(provider.GetRequiredService<IServiceScopeFactory>());
+        await broker.StartAsync(CancellationToken.None);
+
+        await broker.PublishAsync(new Unhandled(0)); // no handler for Unhandled
+        await broker.PublishAsync(new Pinged(1)); // has a handler
+        await broker.StopAsync(CancellationToken.None);
+
+        Assert.Equal(1, handler.Count); // the unhandled event neither threw nor stopped the consumer
+    }
+
+    [Fact]
+    public async Task End_to_end_delivers_to_a_scanned_transient_handler_wired_by_AddD4npUtil()
+    {
+        // #99: exercises the shipped path end-to-end — AddD4npUtil scans and registers handlers as
+        // TRANSIENT and wires the broker — rather than the pre-built singletons the other tests use.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<E2ESignal>();
+        services.AddD4npUtil(typeof(EventBrokerTests).Assembly); // scans E2EHandler (transient) + wires the broker
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        var signal = provider.GetRequiredService<E2ESignal>();
+        var broker = provider.GetRequiredService<EventBroker>();
+        await broker.StartAsync(CancellationToken.None);
+
+        await ((IEventBroker)broker).PublishAsync(new E2E(42));
+        int value = await signal.Handled.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        await broker.StopAsync(CancellationToken.None);
+        Assert.Equal(42, value); // the scanned transient handler received the event
+    }
 }
