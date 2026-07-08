@@ -49,6 +49,13 @@ Report privately (see [`SECURITY.md`](../../SECURITY.md)); triage & fix under em
 coordinated release then advisory; record under a `Security` changelog entry with the
 advisory/CVE; backport to every supported line.
 
+**Supported window.** This is the authoritative definition that [`SECURITY.md`](../../SECURITY.md)
+points to. Security fixes land on the **latest released MINOR of the current MAJOR** line — minors are
+backward-compatible, so consumers are expected to be on the newest minor of their major. When a new
+MAJOR ships, the **previous MAJOR stays supported for 6 months** from that release date to give
+consumers a bounded migration window; after that it is end-of-life. Only one prior major is ever kept
+alive this way. Pre-`1.0` `0.x` releases are unsupported now that `1.0.0` has shipped.
+
 ## Deprecation policy
 
 1. **Deprecate in a MINOR** — mark deprecated in the API docs + a `Deprecated` changelog
