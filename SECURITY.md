@@ -2,14 +2,20 @@
 
 ## Supported versions
 
-Until `egl-util-csharp` reaches `v1.0.0`, only the latest released minor line receives
-security fixes. After `1.0.0`, the supported window is defined in
+`egl-util-csharp` follows [SemVer](https://semver.org). Security fixes land on the **latest
+released minor of the current major** line; when a new major ships, the **previous major stays
+supported for 6 months** from that release date to give consumers a migration window. The
+authoritative definition (and how
+the SemVer level of a fix is assessed) lives in
 [`docs/workflow/maintenance.md`](docs/workflow/maintenance.md).
+
+`v1.0.0` has shipped, so the currently supported versions are:
 
 | Version | Supported |
 |---------|-----------|
-| latest released `0.x` | ✅ |
-| older `0.x` | ❌ |
+| latest `1.x` minor | ✅ |
+| older `1.x` minors | ❌ |
+| `0.x` (pre-release) | ❌ |
 
 ## Reporting a vulnerability
 
