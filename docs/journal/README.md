@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-08 — Docs: AggregateRoot thread-confinement contract (#46)](2026/07/2026-07-08-docs-aggregateroot-thread-confinement.md)
 - [2026-07-08 — Docs: ValueObject collection-component equality caveat (#45)](2026/07/2026-07-08-docs-valueobject-collection-equality.md)
 - [2026-07-08 — CI: fail (not skip) the Redis integration tests when Docker is expected (#100)](2026/07/2026-07-08-ci-redis-coverage-fail-loud.md)
 - [2026-07-08 — Test: cover cache TTL/expiration (#101)](2026/07/2026-07-08-test-cache-ttl-expiration.md)

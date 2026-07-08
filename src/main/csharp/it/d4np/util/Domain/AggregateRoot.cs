@@ -6,6 +6,20 @@ namespace It.D4np.Util.Domain;
 /// raised during a unit of work until an infrastructure boundary collects, dispatches, and
 /// clears them.
 /// </summary>
+/// <remarks>
+/// <b>Threading.</b> The domain-event buffer is an ordinary, <b>unsynchronized</b> list, so an
+/// aggregate instance is <b>not</b> safe for concurrent use: <see cref="RaiseDomainEvent"/>,
+/// <see cref="DomainEvents"/>, and <see cref="ClearDomainEvents"/> all read or mutate it without
+/// locking. The contract is <b>single-thread confinement to one unit of work</b> — the aggregate is
+/// created, mutated, persisted, and has its events dispatched-and-cleared on a single logical flow
+/// (typically the thread owning that unit of work's EF Core <c>DbContext</c>, which is itself not
+/// thread-safe), so the domain code that raises events and the infrastructure boundary that enumerates
+/// and clears them never touch the buffer concurrently. Mutating one aggregate from multiple threads —
+/// or having one thread raise an event while another concurrently enumerates or clears the buffer — is
+/// a data race the library does not guard against; confine each aggregate to a single flow at a time.
+/// A <i>re-entrant</i> raise on that same flow (e.g. a handler that raises another event while the
+/// aggregate is being dispatched) is not concurrent access and is safe.
+/// </remarks>
 /// <typeparam name="TId">The strongly-typed aggregate identifier; must be non-nullable.</typeparam>
 public abstract class AggregateRoot<TId> : Entity<TId>, IHasDomainEvents
     where TId : notnull
