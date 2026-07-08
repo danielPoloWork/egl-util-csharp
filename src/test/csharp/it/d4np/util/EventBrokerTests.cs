@@ -46,6 +46,29 @@ public class EventBrokerTests
         }
     }
 
+    // Records deliveries, but blocks the very first one on a gate so subsequent events pile up behind the
+    // single consumer — a deterministic queued backlog for the shutdown-drain test.
+    private sealed class GatedRecordingHandler : IEventHandler<Pinged>
+    {
+        private readonly Task _gate;
+        private readonly ConcurrentQueue<int> _sequences = new();
+        private int _seen;
+
+        public GatedRecordingHandler(Task gate) => _gate = gate;
+
+        public IReadOnlyList<int> Sequences => _sequences.ToArray();
+
+        public async Task HandleAsync(Pinged @event, CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref _seen) == 1)
+            {
+                await _gate; // hold the consumer on the first event while the rest queue up
+            }
+
+            _sequences.Enqueue(@event.Sequence);
+        }
+    }
+
     private static ServiceProvider BuildProvider(IEventHandler<Pinged> handler)
     {
         var services = new ServiceCollection();
@@ -175,6 +198,48 @@ public class EventBrokerTests
         await broker.StopAsync(CancellationToken.None); // completes the channel and drains
 
         Assert.Equal(1, handler.Count);
+    }
+
+    [Fact]
+    public async Task PublishAsync_after_shutdown_throws()
+    {
+        // #55: once the broker has stopped it no longer accepts events — the closed channel surfaces as
+        // an InvalidOperationException rather than silently swallowing the publish.
+        var handler = new CountingHandler();
+        await using ServiceProvider provider = BuildProvider(handler);
+        using var broker = new EventBroker(provider.GetRequiredService<IServiceScopeFactory>());
+        await broker.StartAsync(CancellationToken.None);
+        await broker.StopAsync(CancellationToken.None);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => broker.PublishAsync(new Pinged(1)).AsTask());
+        Assert.Equal(0, handler.Count); // the rejected event was never delivered
+    }
+
+    [Fact]
+    public async Task StopAsync_drains_a_queued_backlog()
+    {
+        // #55: shutdown is a best-effort drain. A gate holds the consumer on the first event so the rest
+        // form a real queued backlog; shutdown then begins, the gate is released, and StopAsync must drain
+        // the whole backlog before returning (standalone broker, no shutdown-timeout budget). Under a
+        // generic host the drain is bounded by HostOptions.ShutdownTimeout, so deep queues can lose the
+        // tail — a host-integration behavior not exercised here.
+        const int count = 50;
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new GatedRecordingHandler(gate.Task);
+        await using ServiceProvider provider = BuildProvider(handler);
+        using var broker = new EventBroker(provider.GetRequiredService<IServiceScopeFactory>());
+        await broker.StartAsync(CancellationToken.None);
+
+        for (int i = 0; i < count; i++)
+        {
+            await broker.PublishAsync(new Pinged(i)); // event 0 is gated; 1..49 queue behind it
+        }
+
+        Task stop = broker.StopAsync(CancellationToken.None); // begins shutdown while the backlog is queued
+        gate.SetResult(); // release the consumer; the whole backlog must still drain
+        await stop.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.Equal(count, handler.Sequences.Count); // every queued event drained on shutdown
     }
 
     [Fact]
