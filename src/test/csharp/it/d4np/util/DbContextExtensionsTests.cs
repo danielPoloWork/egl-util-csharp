@@ -93,6 +93,40 @@ public class DbContextExtensionsTests
     }
 
     [Fact]
+    public async Task DispatchDomainEventsAsync_clears_earlier_aggregates_but_retains_the_failing_and_later_ones()
+    {
+        // #57: multi-aggregate partial-clear. `publish` throws while dispatching the second aggregate, so
+        // the aggregate delivered before it is cleared while the failing aggregate and the one after it
+        // keep their events buffered for an at-least-once retry (asserted by counts, so the test does not
+        // depend on the change tracker's aggregate ordering).
+        using var catalog = Catalog.Create(useSqlite: false);
+        var first = new Product(Guid.NewGuid(), "a", 1, Guid.NewGuid());
+        var second = new Product(Guid.NewGuid(), "b", 1, Guid.NewGuid());
+        var third = new Product(Guid.NewGuid(), "c", 1, Guid.NewGuid());
+        first.RaiseTestEvent(new ProductCreated(DateTime.UnixEpoch));
+        second.RaiseTestEvent(new ProductCreated(DateTime.UnixEpoch.AddDays(1)));
+        third.RaiseTestEvent(new ProductCreated(DateTime.UnixEpoch.AddDays(2)));
+        catalog.Context.Products.AddRange(first, second, third);
+
+        var calls = 0;
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            catalog.Context.DispatchDomainEventsAsync((_, _) =>
+            {
+                calls++;
+                if (calls == 2)
+                {
+                    throw new InvalidOperationException("publish failed"); // fail while dispatching the 2nd aggregate
+                }
+
+                return Task.CompletedTask;
+            }));
+
+        Product[] products = [first, second, third];
+        Assert.Equal(1, products.Count(product => product.DomainEvents.Count == 0)); // one delivered-and-cleared
+        Assert.Equal(2, products.Count(product => product.DomainEvents.Count == 1)); // failing + later retained
+    }
+
+    [Fact]
     public async Task DispatchDomainEventsAsync_drains_events_a_handler_raises_during_dispatch()
     {
         // Regression for #30: a handler that raises a further event on the same aggregate while it is
