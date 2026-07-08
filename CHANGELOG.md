@@ -26,6 +26,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- CI now fails, rather than silently skips, the Testcontainers Redis integration tests on the
+  Docker-capable leg (#100). The tests caught every container-start failure and downgraded to a skip, so a
+  regression (a bad image tag, a Testcontainers break) could silently stop the only real-Redis coverage
+  while the pipeline stayed green. They now honor a `REQUIRE_DOCKER` flag — set on the ubuntu CI leg — that
+  turns "the container did not start" into a test failure; environments without Docker (the windows/macOS
+  legs, local dev) still skip. Repo/CI change only; the shipped package is unchanged.
 - The release workflow now packs and publishes the NuGet package (#22). On a `v*.*.*` tag it packs the
   single `It.D4np.Util` package (+ `.snupkg`), asserts the packed version equals the tag, and attaches
   both to the drafted GitHub Release; when a maintainer publishes that release, it pushes to nuget.org
