@@ -6,6 +6,7 @@ using It.D4np.Util.Infrastructure;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace It.D4np.Util.Tests;
 
@@ -265,5 +266,127 @@ public sealed class CacheServiceTests : IDisposable
     public async Task RemoveAsync_rejects_a_null_or_empty_key(string? key)
     {
         await Assert.ThrowsAnyAsync<ArgumentException>(() => _cache.RemoveAsync(key!).AsTask());
+    }
+
+    [Fact]
+    public async Task GetOrCreateAsync_applies_a_positive_ttl_as_absolute_expiration_to_both_levels()
+    {
+        // #101: on a miss, the ttl must be written to BOTH levels as AbsoluteExpirationRelativeToNow
+        // (not sliding, not one level only). Capturing spies assert the options directly — deterministic,
+        // no waiting.
+        var ttl = TimeSpan.FromMinutes(5);
+        var l1 = new CapturingMemoryCache();
+        var l2 = new CapturingDistributedCache();
+        var cache = new CacheService(l1, l2);
+
+        await cache.GetOrCreateAsync("k", _ => Task.FromResult("v"), ttl);
+
+        Assert.NotNull(l1.LastEntry);
+        Assert.Equal(ttl, l1.LastEntry!.AbsoluteExpirationRelativeToNow); // L1 carries the ttl...
+        Assert.Null(l1.LastEntry.SlidingExpiration);                      // ...as absolute-relative, not sliding
+        Assert.NotNull(l2.LastOptions);
+        Assert.Equal(ttl, l2.LastOptions!.AbsoluteExpirationRelativeToNow); // L2 carries the same ttl...
+        Assert.Null(l2.LastOptions.SlidingExpiration);
+        Assert.Null(l2.LastOptions.AbsoluteExpiration);                     // ...not sliding, not a fixed instant
+    }
+
+    [Fact]
+    public async Task GetOrCreateAsync_without_a_ttl_writes_entries_with_no_expiration()
+    {
+        // #101: absent a ttl, neither level gets an expiration (a regression that always set one, or
+        // defaulted to sliding, would fail here).
+        var l1 = new CapturingMemoryCache();
+        var l2 = new CapturingDistributedCache();
+        var cache = new CacheService(l1, l2);
+
+        await cache.GetOrCreateAsync("k", _ => Task.FromResult("v"));
+
+        Assert.NotNull(l1.LastEntry);
+        Assert.Null(l1.LastEntry!.AbsoluteExpirationRelativeToNow);
+        Assert.Null(l1.LastEntry.SlidingExpiration);
+        Assert.NotNull(l2.LastOptions);
+        Assert.Null(l2.LastOptions!.AbsoluteExpirationRelativeToNow);
+        Assert.Null(l2.LastOptions.SlidingExpiration);
+        Assert.Null(l2.LastOptions.AbsoluteExpiration);
+    }
+
+    // Always-miss IMemoryCache that captures the options of the last entry created, so a test can assert
+    // exactly what expiration CacheService applied to L1 without waiting for a clock.
+    private sealed class CapturingMemoryCache : IMemoryCache
+    {
+        public CapturingCacheEntry? LastEntry { get; private set; }
+
+        public bool TryGetValue(object key, out object? value)
+        {
+            value = null;
+            return false;
+        }
+
+        public ICacheEntry CreateEntry(object key) => LastEntry = new CapturingCacheEntry(key);
+
+        public void Remove(object key)
+        {
+        }
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class CapturingCacheEntry(object key) : ICacheEntry
+    {
+        public object Key { get; } = key;
+
+        public object? Value { get; set; }
+
+        public DateTimeOffset? AbsoluteExpiration { get; set; }
+
+        public TimeSpan? AbsoluteExpirationRelativeToNow { get; set; }
+
+        public TimeSpan? SlidingExpiration { get; set; }
+
+        public IList<IChangeToken> ExpirationTokens { get; } = [];
+
+        public IList<PostEvictionCallbackRegistration> PostEvictionCallbacks { get; } = [];
+
+        public CacheItemPriority Priority { get; set; }
+
+        public long? Size { get; set; }
+
+        public void Dispose()
+        {
+        }
+    }
+
+    // Always-miss IDistributedCache that captures the options of the last SetAsync, so a test can assert
+    // exactly what expiration CacheService applied to L2.
+    private sealed class CapturingDistributedCache : IDistributedCache
+    {
+        public DistributedCacheEntryOptions? LastOptions { get; private set; }
+
+        public byte[]? Get(string key) => null;
+
+        public Task<byte[]?> GetAsync(string key, CancellationToken token = default) =>
+            Task.FromResult<byte[]?>(null);
+
+        public void Set(string key, byte[] value, DistributedCacheEntryOptions options) => LastOptions = options;
+
+        public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options, CancellationToken token = default)
+        {
+            LastOptions = options;
+            return Task.CompletedTask;
+        }
+
+        public void Refresh(string key)
+        {
+        }
+
+        public Task RefreshAsync(string key, CancellationToken token = default) => Task.CompletedTask;
+
+        public void Remove(string key)
+        {
+        }
+
+        public Task RemoveAsync(string key, CancellationToken token = default) => Task.CompletedTask;
     }
 }

@@ -95,4 +95,46 @@ public sealed class RedisCacheIntegrationTests : IAsyncLifetime
         await cache.RemoveAsync("s:1");
         Assert.Null(await redis.GetAsync<Sample>("s:1"));
     }
+
+    [SkippableFact]
+    public async Task CacheService_expires_a_key_after_its_ttl_against_Redis()
+    {
+        Skip.IfNot(_dockerAvailable, "Docker is not available; skipping the Testcontainers Redis test.");
+
+        using var l1 = new MemoryCache(new MemoryCacheOptions());
+        IDistributedCache redis = NewRedisCache();
+        var cache = new CacheService(l1, redis);
+        var ttl = TimeSpan.FromSeconds(1);
+        int calls = 0;
+
+        Task<Sample> Factory(CancellationToken _)
+        {
+            calls++;
+            return Task.FromResult(new Sample(1, "a"));
+        }
+
+        await cache.GetOrCreateAsync("exp:1", Factory, ttl); // calls == 1; written to L1 and Redis with the ttl
+        l1.Remove("exp:1"); // drop L1 so expiry is decided by Redis (L2)
+
+        // Redis honours the ttl (PEXPIRE) deterministically; poll until the key is gone, with headroom.
+        var expired = false;
+        for (int attempt = 0; attempt < 100 && !expired; attempt++)
+        {
+            if (await redis.GetAsync<Sample>("exp:1") is null)
+            {
+                expired = true;
+            }
+            else
+            {
+                await Task.Delay(100);
+            }
+        }
+
+        Assert.True(expired, "the Redis key should expire within its ttl window");
+
+        // With L1 removed and L2 expired, the next read misses both levels and re-invokes the factory.
+        Sample? afterExpiry = await cache.GetOrCreateAsync("exp:1", Factory, ttl);
+        Assert.Equal(new Sample(1, "a"), afterExpiry);
+        Assert.Equal(2, calls);
+    }
 }
