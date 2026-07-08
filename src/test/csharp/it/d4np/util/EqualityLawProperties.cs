@@ -31,13 +31,33 @@ public class EqualityLawProperties
     }
 
     [Property]
-    public void ValueObject_equality_is_symmetric(int amount, string? currency)
+    public void ValueObject_differing_in_a_single_component_is_unequal(int amount, string? currency)
     {
-        var x = new Money(amount, currency);
-        var y = new Money(amount, currency);
+        // Vary exactly one component at a time so a component-ignoring Equals (a GetEqualityComponents
+        // that drops a field) is caught deterministically — two randomly generated instances almost never
+        // collide on a single field, so an independent-pair test would miss the bug.
+        var baseline = new Money(amount, currency);
+
+        var differsInAmount = new Money(amount == int.MaxValue ? amount - 1 : amount + 1, currency);
+        Assert.NotEqual(baseline, differsInAmount);
+        Assert.True(baseline != differsInAmount);
+        Assert.False(baseline == differsInAmount);
+
+        var differsInCurrency = new Money(amount, currency == "x" ? "y" : "x");
+        Assert.NotEqual(baseline, differsInCurrency);
+        Assert.True(baseline != differsInCurrency);
+        Assert.False(baseline == differsInCurrency);
+    }
+
+    [Property]
+    public void ValueObject_equality_is_symmetric(int amount1, string? currency1, int amount2, string? currency2)
+    {
+        // Independent components so the pair is usually unequal; symmetry must hold either way.
+        var x = new Money(amount1, currency1);
+        var y = new Money(amount2, currency2);
 
         Assert.Equal(x.Equals(y), y.Equals(x));
-        Assert.True(x == y);
+        Assert.Equal(x == y, y == x);
     }
 
     [Property]
@@ -51,11 +71,13 @@ public class EqualityLawProperties
     }
 
     [Property]
-    public void ValueObject_equal_instances_share_a_hash_code(int amount, string? currency)
+    public void ValueObject_equal_instances_are_equal_and_share_a_hash_code(int amount, string? currency)
     {
         var x = new Money(amount, currency);
         var y = new Money(amount, currency);
 
+        Assert.Equal(x, y);
+        Assert.True(x == y);
         Assert.Equal(x.GetHashCode(), y.GetHashCode());
     }
 
