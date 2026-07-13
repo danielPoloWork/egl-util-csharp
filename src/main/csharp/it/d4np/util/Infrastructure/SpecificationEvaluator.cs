@@ -32,13 +32,23 @@ public static class SpecificationEvaluator
         query = specification.Includes.Aggregate(query, (current, include) => current.Include(include));
         query = specification.IncludeStrings.Aggregate(query, (current, include) => current.Include(include));
 
-        if (specification.OrderBy is not null)
+        IOrderedQueryable<TEntity>? ordered = specification.OrderBy is not null
+            ? query.OrderBy(specification.OrderBy)
+            : specification.OrderByDescending is not null
+                ? query.OrderByDescending(specification.OrderByDescending)
+                : null;
+
+        if (ordered is not null)
         {
-            query = query.OrderBy(specification.OrderBy);
-        }
-        else if (specification.OrderByDescending is not null)
-        {
-            query = query.OrderByDescending(specification.OrderByDescending);
+            // Apply secondary keys after the primary, in order, as ThenBy/ThenByDescending — a
+            // deterministic tie-breaker for paging over a non-unique primary key (#31). Ignored when there
+            // is no primary ordering (ThenBy has nothing to chain onto).
+            foreach (var (keySelector, descending) in specification.ThenBys)
+            {
+                ordered = descending ? ordered.ThenByDescending(keySelector) : ordered.ThenBy(keySelector);
+            }
+
+            query = ordered;
         }
 
         if (specification.IsPagingEnabled)

@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-13 — Feat: ThenBy/ThenByDescending secondary ordering for the Specification (#31)](2026/07/2026-07-13-feat-specification-then-by.md)
 - [2026-07-13 — Fix: define the CacheService L2-outage contract (#62)](2026/07/2026-07-13-fix-cache-l2-outage-contract.md)
 - [2026-07-13 — Fix: fail fast on non-round-trippable cache types (#33)](2026/07/2026-07-13-fix-cache-non-round-trippable-type-guard.md)
 - [2026-07-08 — Fix: reject null elements in Result.Failure / Result.Combine (#53)](2026/07/2026-07-08-fix-result-null-element-guards.md)

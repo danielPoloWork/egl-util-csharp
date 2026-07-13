@@ -40,3 +40,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0022](0022-drain-domain-events-to-a-fixed-point.md) | Drain domain events to a fixed point during dispatch | Accepted |
 | [0023](0023-reject-non-round-trippable-cache-types.md) | Reject non-round-trippable cache types (fail fast on polymorphic serialization) | Accepted |
 | [0024](0024-define-cache-l2-outage-contract.md) | Define the CacheService L2-outage contract (transparent writes; reads and removes propagate) | Accepted |
+| [0025](0025-add-specification-then-by-ordering.md) | Add ThenBy/ThenByDescending secondary ordering to the Specification | Accepted |

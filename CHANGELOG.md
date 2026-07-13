@@ -12,6 +12,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- Secondary ordering for the Specification pattern (#31). `Specification<TEntity>` gains protected
+  `ApplyThenBy` / `ApplyThenByDescending` helpers and `ISpecification<TEntity>` a `ThenBys` member, so a
+  specification can define a primary sort key plus `ThenBy`/`ThenByDescending` tie-breakers — giving paging
+  over a non-unique key a deterministic order across pages (EF Core cannot express a multi-column sort via
+  a single composite key). `ThenBys` has a default interface implementation (empty), so the addition is
+  **backward-compatible**: existing `ISpecification` implementors are unaffected (ADR-0025). Applied by
+  `SpecificationEvaluator` after the primary ordering.
+
 - Documentation i18n & README polish (Milestone 9): the README translated into Simplified Chinese
   (`docs/i18n/zh/README.md`) and Japanese (`docs/i18n/jp/README.md`), with a `docs/i18n/` index and a content-digest
   freshness manifest (English remains the source of truth; ADR-0011); plus an enterprise README refresh
