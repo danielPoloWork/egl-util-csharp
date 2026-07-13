@@ -1,7 +1,7 @@
 # ADR-0009: Adopt a two-level cache and compact distributed serialization
 
 - **Status:** Accepted
-- **Amended in part by:** [ADR-0021](0021-write-null-properties-in-cache-serialization.md) — the `WhenWritingNull` serialization detail below is dropped (null properties are now written); and [ADR-0023](0023-reject-non-round-trippable-cache-types.md) — declared-type serialization now fails fast on a non-round-trippable `T` (`object`/interface/abstract, or a runtime subtype) instead of silently storing a lossy value. The rest of this ADR stands.
+- **Amended in part by:** [ADR-0021](0021-write-null-properties-in-cache-serialization.md) — the `WhenWritingNull` serialization detail below is dropped (null properties are now written); and [ADR-0023](0023-reject-non-round-trippable-cache-types.md) — declared-type serialization now fails fast on a non-round-trippable `T` (`object`/interface/abstract, or a runtime subtype) instead of silently storing a lossy value. The L2-outage contract is defined in [ADR-0024](0024-define-cache-l2-outage-contract.md) (transparent post-factory writes; reads and removes propagate). The rest of this ADR stands.
 - **Date:** 2026-07-01
 - **Deciders:** Maintainer
 - **Related:** ADR-0003, ADR-0006, ADR-0007, ADR-0008, spec §2 (requirements 21–22), §3, §4

@@ -406,6 +406,112 @@ public sealed class CacheServiceTests : IDisposable
         Assert.Equal(7, number);
     }
 
+    [Fact]
+    public async Task GetOrCreateAsync_returns_the_created_value_when_the_L2_write_faults()
+    {
+        // #62 / ADR-0024: a provider fault on the post-factory L2 write must not fail the call — the value
+        // was computed successfully, so it is returned and still promoted to L1 (just not stored in L2).
+        using var l1 = new MemoryCache(new MemoryCacheOptions());
+        var l2 = new FaultyDistributedCache(setFault: new InvalidOperationException("redis down"));
+        var cache = new CacheService(l1, l2);
+        var calls = 0;
+
+        Widget? value = await cache.GetOrCreateAsync("k", _ =>
+        {
+            calls++;
+            return Task.FromResult(new Widget(1, "a"));
+        });
+
+        Assert.Equal(new Widget(1, "a"), value); // returned despite the L2 write fault
+        Assert.Equal(1, calls);
+        Assert.True(l1.TryGetValue("k", out Widget? promoted)); // still promoted to L1
+        Assert.Equal(new Widget(1, "a"), promoted);
+    }
+
+    [Fact]
+    public async Task GetOrCreateAsync_propagates_cancellation_from_the_L2_write()
+    {
+        // #62 / ADR-0024: cancellation is honoured, not swallowed as an outage — an OperationCanceledException
+        // from the write propagates rather than the value being returned.
+        using var l1 = new MemoryCache(new MemoryCacheOptions());
+        var l2 = new FaultyDistributedCache(setFault: new OperationCanceledException());
+        var cache = new CacheService(l1, l2);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => cache.GetOrCreateAsync("k", _ => Task.FromResult(new Widget(1, "a"))).AsTask());
+    }
+
+    [Fact]
+    public async Task GetOrCreateAsync_propagates_an_L2_read_fault()
+    {
+        // #62 / ADR-0024: reads propagate — a fault reading L2 (before the factory runs) fails the call.
+        using var l1 = new MemoryCache(new MemoryCacheOptions());
+        var l2 = new FaultyDistributedCache(getFault: new InvalidOperationException("redis down"));
+        var cache = new CacheService(l1, l2);
+        var calls = 0;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => cache.GetOrCreateAsync("k", _ =>
+        {
+            calls++;
+            return Task.FromResult(new Widget(1, "a"));
+        }).AsTask());
+
+        Assert.Equal(0, calls); // failed on the L2 read, before the factory
+    }
+
+    [Fact]
+    public async Task RemoveAsync_propagates_an_L2_fault_after_clearing_L1()
+    {
+        // #62 / ADR-0024: RemoveAsync clears L1 first, then L2; an L2 delete fault propagates (leaving L2
+        // possibly stale) but L1 has already been cleared.
+        using var l1 = new MemoryCache(new MemoryCacheOptions());
+        var l2 = new FaultyDistributedCache(removeFault: new InvalidOperationException("redis down"));
+        var cache = new CacheService(l1, l2);
+        l1.Set("k", new Widget(1, "a"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => cache.RemoveAsync("k").AsTask());
+
+        Assert.False(l1.TryGetValue("k", out Widget? _)); // L1 was cleared before the L2 delete threw
+    }
+
+    // Injects provider faults on chosen operations to exercise the L2-outage contract (#62, ADR-0024).
+    private sealed class FaultyDistributedCache(
+        Exception? getFault = null, Exception? setFault = null, Exception? removeFault = null) : IDistributedCache
+    {
+        public byte[]? Get(string key) => getFault is null ? null : throw getFault;
+
+        public Task<byte[]?> GetAsync(string key, CancellationToken token = default) =>
+            getFault is null ? Task.FromResult<byte[]?>(null) : Task.FromException<byte[]?>(getFault);
+
+        public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
+        {
+            if (setFault is not null)
+            {
+                throw setFault;
+            }
+        }
+
+        public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options, CancellationToken token = default) =>
+            setFault is null ? Task.CompletedTask : Task.FromException(setFault);
+
+        public void Refresh(string key)
+        {
+        }
+
+        public Task RefreshAsync(string key, CancellationToken token = default) => Task.CompletedTask;
+
+        public void Remove(string key)
+        {
+            if (removeFault is not null)
+            {
+                throw removeFault;
+            }
+        }
+
+        public Task RemoveAsync(string key, CancellationToken token = default) =>
+            removeFault is null ? Task.CompletedTask : Task.FromException(removeFault);
+    }
+
     // Always-miss IMemoryCache that captures the options of the last entry created, so a test can assert
     // exactly what expiration CacheService applied to L1 without waiting for a clock.
     private sealed class CapturingMemoryCache : IMemoryCache

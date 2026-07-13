@@ -68,6 +68,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `CacheService` now has a defined **L2-outage contract** and no longer discards a computed value on a
+  distributed-cache write blip (#62). Previously any `IDistributedCache` fault failed the whole call —
+  worst of all, a fault on the *post-factory* write threw away the value the factory had just produced.
+  Now a post-factory L2 **write** fault is swallowed and the value is returned (still promoted to L1), so
+  a transient outage never fails the business operation; cancellation (`OperationCanceledException`) is
+  still honoured, and serialization errors still surface (the value is serialised before the guarded
+  write). L2 **read** faults and `RemoveAsync` faults still propagate, now documented (ADR-0024).
+  **Behavior change:** a caller that previously saw an exception on an L2 write fault now gets the value.
+  No public-API change.
 - The cache now **fails fast** on a value that cannot round-trip instead of silently storing a lossy one
   (#33). `CacheService`/`DistributedCacheExtensions` serialise the **declared** type `T` (no `$type`
   discriminator), so `GetOrCreateAsync<IShape>()` storing a `Circle`, `GetOrCreateAsync<object>()`, or a

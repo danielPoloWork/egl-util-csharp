@@ -35,6 +35,16 @@ namespace It.D4np.Util.Infrastructure;
 /// is capped; a removal or update is only guaranteed to be observed everywhere once each instance's L1
 /// entry has expired or been evicted. See ADR-0009.
 /// </para>
+/// <para>
+/// <b>L2 outages.</b> A provider fault on the <b>post-factory L2 write</b> does not fail the call: once
+/// the factory has produced a value, an <see cref="IDistributedCache"/> write fault is swallowed and the
+/// value is returned (and still promoted to L1), so a distributed-cache blip never turns a successful
+/// computation into a business-operation failure — the entry is simply not stored in L2 that time.
+/// Cancellation is <b>not</b> swallowed: an <see cref="OperationCanceledException"/> from the supplied
+/// token propagates. All <b>other</b> L2 faults propagate: a fault <i>reading</i> L2 (before the factory
+/// runs) fails the call, as does an L2 fault in <see cref="RemoveAsync"/> — which has already cleared L1
+/// by then, so L2 may be left stale. See ADR-0024.
+/// </para>
 /// </remarks>
 public sealed class CacheService : ICacheService
 {
@@ -116,9 +126,24 @@ public sealed class CacheService : ICacheService
             return created;
         }
 
-        await _distributedCache
-            .SetAsync(key, CacheSerializer.Serialize(created), ToDistributedOptions(ttl), cancellationToken)
-            .ConfigureAwait(false);
+        // Serialize before the write so a serialization/contract error (a programming error, e.g. a
+        // non-round-trippable type) still surfaces; only the distributed-store write itself is treated
+        // as an outage below.
+        byte[] payload = CacheSerializer.Serialize(created);
+        try
+        {
+            await _distributedCache
+                .SetAsync(key, payload, ToDistributedOptions(ttl), cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // The value was computed successfully; a distributed-cache write fault (a provider outage)
+            // must not fail the business operation, so it is swallowed and the value returned (still
+            // promoted to L1 below), just not stored in L2 this time. Cancellation is excluded from the
+            // filter so the caller's cancellation contract is honoured (#62, ADR-0024).
+        }
+
         SetMemory(key, created, ttl);
         return created;
     }
