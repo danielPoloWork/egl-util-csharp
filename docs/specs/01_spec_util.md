@@ -19,8 +19,8 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 - `Error` — immutable `record` of `Code` + `Message`, value-equal, defining a canonical `Error.None`.
 - `Result.Combine` — aggregates many results into one that succeeds iff all succeed, else returns the collected errors.
 - `IRepository<TEntity, TId>` — generic CRUD abstraction (`GetByIdAsync`, `ListAsync`, `Add`, `Update`, `Remove`) over an aggregate root.
-- `ISpecification<TEntity>` — Specification pattern: criteria expression, includes, ordering, and paging, isolating LINQ/EF Core query shape.
-- `SpecificationEvaluator` — applies an `ISpecification<TEntity>` to an `IQueryable<TEntity>`, composing criteria, includes, ordering, and paging deterministically.
+- `ISpecification<TEntity>` — Specification pattern: criteria expression, includes, ordering (a primary key plus secondary `ThenBy`/`ThenByDescending` keys; added additively in 1.x, ADR-0025), and paging, isolating LINQ/EF Core query shape.
+- `SpecificationEvaluator` — applies an `ISpecification<TEntity>` to an `IQueryable<TEntity>`, composing criteria, includes, ordering (primary then secondary keys), and paging deterministically.
 - `IUnitOfWork` — atomic transaction boundary; `SaveChangesAsync` commits all tracked changes as one unit.
 - `DbContextExtensions` — extracts pending domain events from tracked aggregates and publishes them around `SaveChanges`, clearing them on success; `CaptureDomainEvents` snapshots the events before `SaveChanges` (into a `DomainEventSnapshot`) so events on aggregates the save removes are still delivered.
 - `IEventBroker` — asynchronous in-memory publish abstraction (`PublishAsync<TEvent>`) that does not block the caller.

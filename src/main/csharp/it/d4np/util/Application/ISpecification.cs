@@ -32,6 +32,16 @@ public interface ISpecification<TEntity>
     /// <summary>The descending sort key, or <see langword="null"/> if not sorted descending.</summary>
     Expression<Func<TEntity, object>>? OrderByDescending { get; }
 
+    /// <summary>
+    /// Secondary sort keys applied after the primary <see cref="OrderBy"/>/<see cref="OrderByDescending"/>,
+    /// in order, as <c>ThenBy</c>/<c>ThenByDescending</c> — each with its own direction (<c>Descending</c>).
+    /// Empty when there is no secondary ordering, and ignored when there is no primary ordering. These give
+    /// a deterministic tie-breaker for paging over a non-unique primary key (EF Core cannot express a
+    /// multi-column sort through a single composite key expression). A <b>default</b> implementation returns
+    /// an empty list, so this member is additive — existing implementors need not provide it.
+    /// </summary>
+    IReadOnlyList<(Expression<Func<TEntity, object>> KeySelector, bool Descending)> ThenBys => [];
+
     /// <summary>The number of elements to skip when <see cref="IsPagingEnabled"/> is <see langword="true"/>.</summary>
     int Skip { get; }
 

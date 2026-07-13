@@ -41,6 +41,40 @@ public class SpecificationEvaluatorTests
         public UnorderedPaged() => ApplyPaging(skip: 0, take: 2); // paging with no ordering
     }
 
+    private sealed class ByPriceThenName : Specification<Product>
+    {
+        public ByPriceThenName()
+        {
+            ApplyOrderBy(product => product.Price);
+            ApplyThenBy(product => product.Name);
+        }
+    }
+
+    private sealed class ByPriceThenNameDescending : Specification<Product>
+    {
+        public ByPriceThenNameDescending()
+        {
+            ApplyOrderBy(product => product.Price);
+            ApplyThenByDescending(product => product.Name);
+        }
+    }
+
+    private static void SeedWithDuplicatePrices(CatalogContext context)
+    {
+        var category = new Category(Guid.NewGuid(), "cat");
+        context.Categories.Add(category);
+        // Three products tie on price 20, inserted in an order (mike, alpha, zulu) that matches neither
+        // Name-ascending nor Name-descending — so dropping the ThenBy and falling back to the provider's
+        // default (insertion) tie order fails both tie-breaker tests, not just one.
+        context.Products.AddRange(
+            new Product(Guid.NewGuid(), "mike", 20, category.Id),
+            new Product(Guid.NewGuid(), "charlie", 10, category.Id),
+            new Product(Guid.NewGuid(), "alpha", 20, category.Id),
+            new Product(Guid.NewGuid(), "zulu", 20, category.Id));
+        context.SaveChanges();
+        context.ChangeTracker.Clear();
+    }
+
     private static Category SeedCatalog(CatalogContext context)
     {
         var books = new Category(Guid.NewGuid(), "books");
@@ -86,6 +120,36 @@ public class SpecificationEvaluatorTests
 
         // ascending prices are 10, 15, 20, 30; skip 1 then take 2 -> 15, 20.
         Assert.Equal(new[] { 15, 20 }, result.Select(product => product.Price));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Applies_a_secondary_then_by_as_a_deterministic_tie_breaker(bool useSqlite)
+    {
+        using var catalog = Catalog.Create(useSqlite);
+        SeedWithDuplicatePrices(catalog.Context);
+
+        List<Product> result = SpecificationEvaluator.GetQuery(catalog.Context.Products, new ByPriceThenName()).ToList();
+
+        // Price asc, then Name asc breaks the price-20 tie deterministically: charlie(10), then alpha, mike, zulu.
+        Assert.Equal(new[] { "charlie", "alpha", "mike", "zulu" }, result.Select(product => product.Name));
+        Assert.Equal(new[] { 10, 20, 20, 20 }, result.Select(product => product.Price));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Applies_a_secondary_then_by_descending(bool useSqlite)
+    {
+        using var catalog = Catalog.Create(useSqlite);
+        SeedWithDuplicatePrices(catalog.Context);
+
+        List<Product> result =
+            SpecificationEvaluator.GetQuery(catalog.Context.Products, new ByPriceThenNameDescending()).ToList();
+
+        // Price asc, then Name desc: the price-20 tie orders zulu, mike, alpha.
+        Assert.Equal(new[] { "charlie", "zulu", "mike", "alpha" }, result.Select(product => product.Name));
     }
 
     [Fact]
