@@ -58,10 +58,10 @@ public class Result
     public static Result Success() => new(true, NoErrors);
 
     /// <summary>Creates a failed result carrying the given errors.</summary>
-    /// <param name="errors">One or more errors; must be non-null, non-empty, and must not contain <see cref="Error.None"/>.</param>
+    /// <param name="errors">One or more errors; the array must be non-null and non-empty, and must not contain a null error or <see cref="Error.None"/>.</param>
     /// <returns>A failed <see cref="Result"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="errors"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException"><paramref name="errors"/> is empty or contains <see cref="Error.None"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="errors"/> is empty, contains a null error, or contains <see cref="Error.None"/>.</exception>
     public static Result Failure(params Error[] errors) => new(false, Defensive(errors));
 
     /// <summary>Creates a successful result carrying <paramref name="value"/>.</summary>
@@ -84,10 +84,10 @@ public class Result
 
     /// <summary>Creates a failed result of <typeparamref name="TValue"/> carrying the given errors.</summary>
     /// <typeparam name="TValue">The success value type.</typeparam>
-    /// <param name="errors">One or more errors; must be non-null, non-empty, and must not contain <see cref="Error.None"/>.</param>
+    /// <param name="errors">One or more errors; the array must be non-null and non-empty, and must not contain a null error or <see cref="Error.None"/>.</param>
     /// <returns>A failed <see cref="Result{TValue}"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="errors"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException"><paramref name="errors"/> is empty or contains <see cref="Error.None"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="errors"/> is empty, contains a null error, or contains <see cref="Error.None"/>.</exception>
     public static Result<TValue> Failure<TValue>(params Error[] errors) => new(default, false, Defensive(errors));
 
     /// <summary>
@@ -95,11 +95,20 @@ public class Result
     /// every error from the failed results, in order. With no arguments, returns <see cref="Success()"/>
     /// (the identity element).
     /// </summary>
-    /// <param name="results">The results to combine; must be non-null (individual results non-null).</param>
+    /// <param name="results">The results to combine; the array and every element must be non-null.</param>
     /// <returns>The aggregated <see cref="Result"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="results"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="results"/> contains a null element.</exception>
     public static Result Combine(params Result[] results)
     {
         ArgumentNullException.ThrowIfNull(results);
+        if (Array.Exists(results, static result => result is null))
+        {
+            // Guard the elements, not just the array: SelectMany over a null element would throw an
+            // opaque NullReferenceException. Reject it with a clear ArgumentException instead (#53).
+            throw new ArgumentException("Cannot combine a null result.", nameof(results));
+        }
+
         Error[] errors = results.SelectMany(result => result.Errors).ToArray();
         return errors.Length == 0 ? Success() : Failure(errors);
     }
@@ -107,6 +116,13 @@ public class Result
     private static IReadOnlyList<Error> Defensive(Error[] errors)
     {
         ArgumentNullException.ThrowIfNull(errors);
+        if (Array.Exists(errors, static error => error is null))
+        {
+            // Result.Error is typed non-nullable; a null element would leak through it and defer a
+            // NullReferenceException to the consumer. Reject it up front (#53).
+            throw new ArgumentException("A failed result cannot carry a null error.", nameof(errors));
+        }
+
         if (Array.Exists(errors, static error => error == Error.None))
         {
             // Error.None is the sentinel carried by successful results. A failure carrying it would

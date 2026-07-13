@@ -68,6 +68,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `Result.Failure(params Error[])` and `Result.Combine(params Result[])` now reject a **null element**
+  with an `ArgumentException` (#53). Both guarded the array but not its elements: a null `Error` leaked
+  through the non-nullable `Result.Error` (deferring a `NullReferenceException` to the consumer), and
+  `Combine` threw an opaque `NullReferenceException` on a null `Result`. The element is now validated
+  up front, matching the type's existing fail-fast posture (it already rejects `Error.None` and null
+  success values). No public-API change.
 - `ValidationPipelineBehavior` no longer shares one `ValidationContext` across concurrently-running
   validators (#52). It validated via `Task.WhenAll` over a single `ValidationContext<TRequest>`, but a
   `ValidationContext` is not safe for concurrent use, so validators doing genuinely-async work overlapped

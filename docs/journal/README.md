@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-08 — Fix: reject null elements in Result.Failure / Result.Combine (#53)](2026/07/2026-07-08-fix-result-null-element-guards.md)
 - [2026-07-08 — Fix: ValidationPipelineBehavior shared-ValidationContext race (#52)](2026/07/2026-07-08-fix-validation-shared-context-race.md)
 - [2026-07-08 — Test: CacheService concurrent-miss last-write-wins coverage (#51)](2026/07/2026-07-08-test-cacheservice-concurrent-miss.md)
 - [2026-07-08 — Docs: SECURITY.md supported-versions + maintenance.md support window (#94)](2026/07/2026-07-08-docs-security-policy-supported-window.md)

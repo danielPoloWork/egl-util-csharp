@@ -38,6 +38,17 @@ public class ResultCombineProperties
         Assert.Equal(new[] { first, second }, combined.Errors);
     }
 
+    [Fact]
+    public void Combine_rejects_a_null_results_array_and_a_null_element()
+    {
+        // #53: the array was guarded, but a null element made Combine throw an opaque NullReferenceException
+        // via SelectMany. The array still throws ArgumentNullException; a null element now throws a clear
+        // ArgumentException rather than an NRE.
+        Assert.Throws<ArgumentNullException>(() => Result.Combine(null!));
+        Assert.Throws<ArgumentException>(() => Result.Combine((Result)null!));
+        Assert.Throws<ArgumentException>(() => Result.Combine(Result.Success(), null!));
+    }
+
     [Property]
     public void Success_is_the_left_identity(int seed)
     {
