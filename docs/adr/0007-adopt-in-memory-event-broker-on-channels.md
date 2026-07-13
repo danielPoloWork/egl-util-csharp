@@ -32,7 +32,9 @@ delivery and failure contract — this is the foundation later milestones build 
 
 - **Publish via MediatR `INotification`.** Rejected for the broker — MediatR's publish awaits handlers
   inline (synchronous to the caller); the spec wants asynchronous, non-blocking in-memory queueing.
-  (`DomainEventNotification<TEvent>` from ADR-0004 still bridges domain events onto MediatR's pipeline.)
+  (`DomainEventNotification<TEvent>` from ADR-0004 still bridges domain events onto MediatR's pipeline;
+  its runtime-type factory — the part that makes the bridge usable from a dispatch callback — was added in
+  ADR-0026.)
 - **Unbounded channel.** Rejected — no back-pressure means unbounded memory growth under load; a
   bounded channel with `Wait` applies natural back-pressure.
 - **Multiple consumers.** Deferred — a single consumer gives simple ordering and exactly-once consume;

@@ -12,6 +12,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- A `DomainEventNotification` factory so the MediatR bridge works for runtime-typed events (#61). The
+  advertised Adapter shipped with no way to close `DomainEventNotification<TEvent>` over an event's runtime
+  type, so the natural dispatch-callback code (`new DomainEventNotification<IDomainEvent>(e)`) published the
+  wrong closed type and reached **zero** concrete-typed handlers. `DomainEventNotification.Create<TEvent>(e)`
+  (reflection-free, trim/AOT-safe) and `DomainEventNotification.Create(IDomainEvent e)` (closes the
+  notification over the runtime type via a cached constructor delegate) now build a notification that
+  MediatR routes to `INotificationHandler<DomainEventNotification<ConcreteEvent>>`. The reflective overload
+  is annotated `[RequiresDynamicCode]`/`[RequiresUnreferencedCode]`; Native AOT consumers use the generic
+  overload or an explicit factory (ADR-0026). Additive; no existing behavior changes.
 - Secondary ordering for the Specification pattern (#31). `Specification<TEntity>` gains protected
   `ApplyThenBy` / `ApplyThenByDescending` helpers and `ISpecification<TEntity>` a `ThenBys` member, so a
   specification can define a primary sort key plus `ThenBy`/`ThenByDescending` tie-breakers — giving paging
