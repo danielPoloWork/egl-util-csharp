@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-13 — Fix: fail fast on non-round-trippable cache types (#33)](2026/07/2026-07-13-fix-cache-non-round-trippable-type-guard.md)
 - [2026-07-08 — Fix: reject null elements in Result.Failure / Result.Combine (#53)](2026/07/2026-07-08-fix-result-null-element-guards.md)
 - [2026-07-08 — Fix: ValidationPipelineBehavior shared-ValidationContext race (#52)](2026/07/2026-07-08-fix-validation-shared-context-race.md)
 - [2026-07-08 — Test: CacheService concurrent-miss last-write-wins coverage (#51)](2026/07/2026-07-08-test-cacheservice-concurrent-miss.md)

@@ -19,7 +19,13 @@ public interface ICacheService
     /// first, then the distributed level); otherwise invokes <paramref name="factory"/>, caches its
     /// result at both levels with the given time-to-live, and returns it.
     /// </summary>
-    /// <typeparam name="T">The cached value type.</typeparam>
+    /// <typeparam name="T">
+    /// The cached value type. A serialising implementation (e.g. the built-in <c>CacheService</c>)
+    /// serialises the <b>declared</b> type <typeparamref name="T"/>, so it must be a concrete, fully
+    /// round-trippable type and the value's runtime type must equal it — an <see cref="object"/>,
+    /// interface, or abstract <typeparamref name="T"/>, or a runtime subtype, cannot round-trip and is
+    /// rejected rather than silently stored lossy (see ADR-0023).
+    /// </typeparam>
     /// <param name="key">The cache key; must not be <see langword="null"/> or empty.</param>
     /// <param name="factory">
     /// Produces the value on a cache miss; invoked at most once per miss on the calling path. A
@@ -35,6 +41,10 @@ public interface ICacheService
     /// <exception cref="ArgumentException"><paramref name="key"/> is <see langword="null"/> or empty.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="ttl"/> is specified and not strictly positive.</exception>
+    /// <exception cref="NotSupportedException">
+    /// A serialising implementation cannot round-trip <typeparamref name="T"/> — it is <see cref="object"/>,
+    /// an interface, or an abstract class, or the factory returned a runtime subtype of it (ADR-0023).
+    /// </exception>
     ValueTask<T?> GetOrCreateAsync<T>(
         string key,
         Func<CancellationToken, Task<T>> factory,

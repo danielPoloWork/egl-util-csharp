@@ -68,6 +68,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- The cache now **fails fast** on a value that cannot round-trip instead of silently storing a lossy one
+  (#33). `CacheService`/`DistributedCacheExtensions` serialise the **declared** type `T` (no `$type`
+  discriminator), so `GetOrCreateAsync<IShape>()` storing a `Circle`, `GetOrCreateAsync<object>()`, or a
+  runtime subtype (a `Dog` under `<Animal>`) wrote only `T`'s members and read back lossy with no error.
+  A non-round-trippable `T` (`object`, an interface, or an abstract class) and a value whose runtime type
+  differs from `T` now throw `NotSupportedException` (ADR-0023). No public-API change; a concrete,
+  matching `T` serialises to the same bytes as before. **Behavior change:** code that previously
+  "succeeded" with silent loss now throws — it surfaces only latent misuse, but weigh it as at least a
+  MINOR at release.
 - `Result.Failure(params Error[])` and `Result.Combine(params Result[])` now reject a **null element**
   with an `ArgumentException` (#53). Both guarded the array but not its elements: a null `Error` leaked
   through the non-nullable `Result.Error` (deferring a `NullReferenceException` to the consumer), and

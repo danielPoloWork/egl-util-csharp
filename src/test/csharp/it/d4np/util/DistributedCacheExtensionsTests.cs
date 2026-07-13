@@ -24,6 +24,16 @@ public class DistributedCacheExtensionsTests
 
     private sealed record AnnotatedRecord(int Id, string? Note = "n/a"); // non-null ctor-param default
 
+    private interface IShape { }
+
+    private abstract record ShapeBase(int Sides);
+
+    private sealed record Circle(int Sides, double Radius) : ShapeBase(Sides), IShape;
+
+    private record Animal(string Name); // concrete, non-sealed base
+
+    private sealed record Dog(string Name, string Breed) : Animal(Name);
+
     [Fact]
     public async Task SetAsync_then_GetAsync_round_trips_a_value()
     {
@@ -136,5 +146,31 @@ public class DistributedCacheExtensionsTests
     public async Task SetAsync_rejects_a_null_or_empty_key(string? key)
     {
         await Assert.ThrowsAnyAsync<ArgumentException>(() => _cache.SetAsync(key!, 1));
+    }
+
+    [Fact]
+    public async Task GetAsync_rejects_a_polymorphic_declared_type_even_for_an_absent_key()
+    {
+        // #33: T is part of the cache contract; an object/interface/abstract declared type cannot
+        // round-trip and is rejected up front — even when the key is absent.
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.GetAsync<object>("absent"));
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.GetAsync<IShape>("absent"));
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.GetAsync<ShapeBase>("absent"));
+    }
+
+    [Fact]
+    public async Task SetAsync_rejects_a_polymorphic_declared_type()
+    {
+        // #33: serialising an object/interface/abstract T would store only the declared type's members.
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.SetAsync<object>("poly:obj", new Circle(1, 2.0)));
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.SetAsync<IShape>("poly:iface", new Circle(1, 2.0)));
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.SetAsync<ShapeBase>("poly:abstract", new Circle(1, 2.0)));
+    }
+
+    [Fact]
+    public async Task SetAsync_rejects_a_runtime_subtype_of_the_declared_type()
+    {
+        // #33: a Dog stored under SetAsync<Animal> would serialise only Animal's members, losing Breed.
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.SetAsync<Animal>("poly:sub", new Dog("Rex", "Lab")));
     }
 }

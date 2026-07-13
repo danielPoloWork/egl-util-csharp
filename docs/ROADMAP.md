@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-08 — fix: reject null elements in Result.Failure / Result.Combine (#53)](journal/2026/07/2026-07-08-fix-result-null-element-guards.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-13 — fix: fail fast on non-round-trippable cache types (#33)](journal/2026/07/2026-07-13-fix-cache-non-round-trippable-type-guard.md).
 
 ---
 

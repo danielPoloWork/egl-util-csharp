@@ -55,6 +55,11 @@ public sealed class CacheService : ICacheService
 
     /// <inheritdoc />
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="ttl"/> is specified and not strictly positive.</exception>
+    /// <exception cref="NotSupportedException">
+    /// <typeparamref name="T"/> is not round-trippable by declared-type serialization — it is
+    /// <see cref="object"/>, an interface, or an abstract class, or the factory returns a runtime subtype
+    /// of <typeparamref name="T"/> (which would silently lose the subtype's members). See #33 / ADR-0023.
+    /// </exception>
     /// <exception cref="System.Text.Json.JsonException">
     /// A stored distributed-cache entry holds malformed JSON, or <typeparamref name="T"/> is not
     /// JSON-serializable. This signals data corruption or a programming error, not expected control flow.
@@ -67,6 +72,11 @@ public sealed class CacheService : ICacheService
     {
         ArgumentException.ThrowIfNullOrEmpty(key);
         ArgumentNullException.ThrowIfNull(factory);
+
+        // The cache serialises the declared type T; reject a non-round-trippable T (object/interface/
+        // abstract) up front — before touching either level or running the factory — so the misuse fails
+        // fast rather than after the factory produces a value that cannot be stored faithfully (#33).
+        CacheSerializer.EnsureDeclaredTypeIsRoundTrippable<T>();
 
         // A non-positive TTL is invalid: the underlying entry-options setter rejects it, so validate
         // up-front to fail fast with context — before running the factory or touching either level.

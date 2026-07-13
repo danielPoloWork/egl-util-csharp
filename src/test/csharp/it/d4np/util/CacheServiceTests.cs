@@ -23,6 +23,16 @@ public sealed class CacheServiceTests : IDisposable
 
     private sealed record Widget(int Id, string Name);
 
+    private interface IShape { }
+
+    private abstract record ShapeBase(int Sides);
+
+    private sealed record Circle(int Sides, double Radius) : ShapeBase(Sides), IShape;
+
+    private record Animal(string Name); // concrete, non-sealed base
+
+    private sealed record Dog(string Name, string Breed) : Animal(Name);
+
     [Fact]
     public async Task GetOrCreateAsync_invokes_the_factory_once_then_serves_from_cache()
     {
@@ -350,6 +360,50 @@ public sealed class CacheServiceTests : IDisposable
         Assert.NotNull(served);
         Assert.InRange(served!.Id, 1, n);
         Assert.Equal(served, servedAgain);
+    }
+
+    [Fact]
+    public async Task GetOrCreateAsync_rejects_a_polymorphic_declared_type_before_running_the_factory()
+    {
+        // #33: the cache serialises the declared type T, so an object/interface/abstract T cannot
+        // round-trip (an empty {} for object) and would silently lose the concrete value's members. It is
+        // rejected up front — before the factory runs — rather than stored lossy.
+        var ranObject = false;
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.GetOrCreateAsync<object>(
+            "poly:obj",
+            _ =>
+            {
+                ranObject = true;
+                return Task.FromResult<object>(new Circle(1, 2.0));
+            }).AsTask());
+        Assert.False(ranObject); // guarded before the factory ran
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.GetOrCreateAsync<IShape>(
+            "poly:iface", _ => Task.FromResult<IShape>(new Circle(1, 2.0))).AsTask());
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.GetOrCreateAsync<ShapeBase>(
+            "poly:abstract", _ => Task.FromResult<ShapeBase>(new Circle(1, 2.0))).AsTask());
+    }
+
+    [Fact]
+    public async Task GetOrCreateAsync_rejects_a_runtime_subtype_of_the_declared_type()
+    {
+        // #33: even a concrete declared type must match the value's runtime type — a Dog stored under
+        // GetOrCreateAsync<Animal> would serialise only Animal's members and silently lose Breed.
+        await Assert.ThrowsAsync<NotSupportedException>(() => _cache.GetOrCreateAsync<Animal>(
+            "poly:sub", _ => Task.FromResult<Animal>(new Dog("Rex", "Lab"))).AsTask());
+    }
+
+    [Fact]
+    public async Task GetOrCreateAsync_round_trips_a_concrete_type_including_a_nullable_value_type()
+    {
+        // #33 happy path: a concrete type whose runtime type equals T round-trips, and a Nullable<T> value
+        // type must not trip the runtime-type guard (a boxed int? reports its underlying type, int).
+        Widget? widget = await _cache.GetOrCreateAsync("ok:widget", _ => Task.FromResult(new Widget(1, "a")));
+        Assert.Equal(new Widget(1, "a"), widget);
+
+        int? number = await _cache.GetOrCreateAsync<int?>("ok:nullable", _ => Task.FromResult<int?>(7));
+        Assert.Equal(7, number);
     }
 
     // Always-miss IMemoryCache that captures the options of the last entry created, so a test can assert
