@@ -53,6 +53,17 @@ public class ResultTests
     }
 
     [Fact]
+    public void Failure_rejects_a_null_error_element()
+    {
+        // #53: the array is guarded, but a null element would leak through the non-nullable Result.Error
+        // and defer a NullReferenceException. It is now rejected up front with an ArgumentException.
+        Assert.Throws<ArgumentException>(() => Result.Failure((Error)null!));
+        Assert.Throws<ArgumentException>(() => Result.Failure(new Error("E1", "real"), null!));
+        Assert.Throws<ArgumentException>(() => Result.Failure<int>((Error)null!));
+        Assert.Throws<ArgumentException>(() => Result.Failure<int>(new Error("E1", "real"), null!));
+    }
+
+    [Fact]
     public void Errors_is_a_read_only_view_that_cannot_be_mutated_through_a_downcast()
     {
         // #85: Errors must not be castable back to its mutable backing array — otherwise a consumer can
