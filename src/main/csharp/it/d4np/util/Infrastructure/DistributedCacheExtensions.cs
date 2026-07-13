@@ -25,12 +25,16 @@ public static class DistributedCacheExtensions
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="cache"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is <see langword="null"/> or empty.</exception>
+    /// <exception cref="NotSupportedException"><typeparamref name="T"/> is not round-trippable by declared-type serialization — it is <see cref="object"/>, an interface, or an abstract class (#33 / ADR-0023).</exception>
     /// <exception cref="System.Text.Json.JsonException">The stored bytes are not valid JSON for <typeparamref name="T"/>.</exception>
     public static async Task<T?> GetAsync<T>(
         this IDistributedCache cache, string key, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentException.ThrowIfNullOrEmpty(key);
+        // T is part of the cache contract: reject a non-round-trippable declared type up front, even when
+        // the key turns out to be absent, so the misuse is reported consistently (#33).
+        CacheSerializer.EnsureDeclaredTypeIsRoundTrippable<T>();
 
         byte[]? bytes = await cache.GetAsync(key, cancellationToken).ConfigureAwait(false);
         return bytes is { Length: > 0 } ? CacheSerializer.Deserialize<T>(bytes) : default;
@@ -40,11 +44,12 @@ public static class DistributedCacheExtensions
     /// <typeparam name="T">The value type to serialise.</typeparam>
     /// <param name="cache">The distributed cache; must not be <see langword="null"/>.</param>
     /// <param name="key">The cache key; must not be <see langword="null"/> or empty.</param>
-    /// <param name="value">The value to store; must not be <see langword="null"/> (a stored JSON <c>null</c> is indistinguishable from an absent key and never cached — matching the <see cref="It.D4np.Util.Application.ICacheService"/> contract).</param>
+    /// <param name="value">The value to store; must not be <see langword="null"/> (a stored JSON <c>null</c> is indistinguishable from an absent key and never cached — matching the <see cref="It.D4np.Util.Application.ICacheService"/> contract). Its runtime type must equal <typeparamref name="T"/>.</param>
     /// <param name="options">Optional entry options (expiration); a fresh instance is used when <see langword="null"/>.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <exception cref="ArgumentNullException"><paramref name="cache"/> or <paramref name="value"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is <see langword="null"/> or empty.</exception>
+    /// <exception cref="NotSupportedException"><typeparamref name="T"/> is <see cref="object"/>, an interface, or an abstract class, or <paramref name="value"/>'s runtime type is a subtype of <typeparamref name="T"/> (declared-type serialization would lose its members; #33 / ADR-0023).</exception>
     public static Task SetAsync<T>(
         this IDistributedCache cache,
         string key,
@@ -58,6 +63,7 @@ public static class DistributedCacheExtensions
         // otherwise be promoted into CacheService's L1 as a null "hit" (never-cache-null policy).
         ArgumentNullException.ThrowIfNull(value);
 
+        // Serialize enforces the round-trippable-T contract (declared type + runtime type == T) (#33).
         byte[] bytes = CacheSerializer.Serialize(value);
         return cache.SetAsync(key, bytes, options ?? new DistributedCacheEntryOptions(), cancellationToken);
     }

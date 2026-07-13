@@ -38,3 +38,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0020](0020-remove-implicit-error-to-result-conversion.md) | Remove the implicit Error → Result<TValue> conversion (breaking) | Accepted |
 | [0021](0021-write-null-properties-in-cache-serialization.md) | Write null properties in the cache serialization format (drop WhenWritingNull) | Accepted |
 | [0022](0022-drain-domain-events-to-a-fixed-point.md) | Drain domain events to a fixed point during dispatch | Accepted |
+| [0023](0023-reject-non-round-trippable-cache-types.md) | Reject non-round-trippable cache types (fail fast on polymorphic serialization) | Accepted |
