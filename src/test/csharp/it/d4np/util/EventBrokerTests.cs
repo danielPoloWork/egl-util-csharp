@@ -498,4 +498,61 @@ public class EventBrokerTests
         await broker.StopAsync(CancellationToken.None);
         Assert.Equal(42, value); // the scanned transient handler received the event
     }
+
+    // --- #71: contravariant dispatch to base-type and interface handlers ---
+
+    private interface IAudited
+    {
+    }
+
+    private abstract record AnimalEvent(int Id);
+
+    private sealed record DogEvent(int Id) : AnimalEvent(Id), IAudited;
+
+    private sealed record CatEvent(int Id) : AnimalEvent(Id); // a sibling — never a base of DogEvent
+
+    // An open generic, so the AddD4npUtil assembly scan skips it (#65); the variance test registers closed
+    // instances manually, so it never perturbs the scan-based end-to-end test above.
+    private sealed class RecordingEventHandler<TEvent> : IEventHandler<TEvent>
+        where TEvent : class
+    {
+        private int _count;
+
+        public int Count => Volatile.Read(ref _count);
+
+        public Task HandleAsync(TEvent @event, CancellationToken cancellationToken = default)
+        {
+            Interlocked.Increment(ref _count);
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task Dispatches_to_handlers_of_the_events_base_type_and_interfaces()
+    {
+        // #71: IEventHandler<in TEvent> is contravariant. Publishing a DogEvent must reach handlers
+        // registered for its exact type, its base type (AnimalEvent), and an interface it implements
+        // (IAudited) — but not a sibling type's handler (CatEvent).
+        var exact = new RecordingEventHandler<DogEvent>();
+        var baseType = new RecordingEventHandler<AnimalEvent>();
+        var @interface = new RecordingEventHandler<IAudited>();
+        var sibling = new RecordingEventHandler<CatEvent>();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IEventHandler<DogEvent>>(exact);
+        services.AddSingleton<IEventHandler<AnimalEvent>>(baseType);
+        services.AddSingleton<IEventHandler<IAudited>>(@interface);
+        services.AddSingleton<IEventHandler<CatEvent>>(sibling);
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        using var broker = new EventBroker(provider.GetRequiredService<IServiceScopeFactory>());
+        await broker.StartAsync(CancellationToken.None);
+
+        await broker.PublishAsync(new DogEvent(1));
+        await broker.StopAsync(CancellationToken.None); // drains before returning
+
+        Assert.Equal(1, exact.Count);       // exact-type handler still fires (regression)
+        Assert.Equal(1, baseType.Count);    // base-type handler now fires (the #71 fix)
+        Assert.Equal(1, @interface.Count);  // interface handler now fires
+        Assert.Equal(0, sibling.Count);     // a sibling type's handler must not fire
+    }
 }

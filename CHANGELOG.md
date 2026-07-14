@@ -85,6 +85,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `EventBroker` now honors `IEventHandler`'s contravariance (#71). `IEventHandler<in TEvent>` is declared
+  contravariant, but the broker resolved handlers by the event's **exact** runtime type, and MS.DI applies
+  no generic variance to `IEnumerable<T>`, so a handler registered for a base type or a catch-all
+  `IEventHandler<IDomainEvent>` silently never fired. Dispatch now also resolves and invokes handlers
+  registered for the event's base types and implemented interfaces (most-specific first), so the `in`
+  modifier delivers what it advertises (ADR-0027). **Behavior change:** base-typed/interface handlers that
+  silently never fired now fire — it surfaces only latent, already-broken registrations; weigh as at least
+  a MINOR. No public-API change; exact-type dispatch is unchanged.
 - `CacheService` now has a defined **L2-outage contract** and no longer discards a computed value on a
   distributed-cache write blip (#62). Previously any `IDistributedCache` fault failed the whole call —
   worst of all, a fault on the *post-factory* write threw away the value the factory had just produced.
