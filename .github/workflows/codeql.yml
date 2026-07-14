@@ -1,0 +1,46 @@
+name: codeql
+
+# Static analysis (SAST) for egl-util-csharp (#47, ADR-0031). Runs CodeQL over the C# source on pushes to
+# main and on pull requests, plus a weekly schedule so a newly-published query catches latent issues on the
+# unchanged tree. Uses the buildless analysis (build-mode: none), so no compile or restore runs here.
+# Findings appear under the repository's Security > Code scanning alerts. Requires Actions billing and
+# code-scanning to be enabled on the repository.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "27 4 * * 1" # Mondays 04:27 UTC
+
+permissions:
+  contents: read
+
+# Cancel superseded PR runs; never cancel a run on main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: analyze / csharp
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write # upload the CodeQL results to code scanning
+      actions: read # read Actions run metadata (needed on private repositories)
+    steps:
+      - name: Check out the source tree
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@e5d2f324924c57b6cabef9bdd7a1c85d62a89be2 # v3.37.0
+        with:
+          languages: csharp
+          build-mode: none
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@e5d2f324924c57b6cabef9bdd7a1c85d62a89be2 # v3.37.0
+        with:
+          category: "/language:csharp"

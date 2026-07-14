@@ -12,6 +12,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- Supply-chain assurance in CI/release: CodeQL, dependency review, and a CycloneDX SBOM (#47, ADR-0031).
+  A new `codeql.yml` runs CodeQL SAST over the C# source (buildless) on push-to-main, PRs, and weekly; a new
+  `dependency-review.yml` fails a PR that introduces a known-vulnerable (or disallowed-license) dependency;
+  and the release workflow now generates a CycloneDX JSON SBOM of the package and attaches it to the drafted
+  GitHub Release. All new actions are SHA-pinned and the CycloneDX tool is version-pinned. Repo/CI change
+  only; the library API and `.nupkg` contents are unchanged (the SBOM is a release-attached artifact). These
+  require Actions billing + code-scanning/Dependency-Graph to be enabled to run.
 - `EventBroker` failures are now observable without a logger via an `EventSource` (#43). A handler that
   threw was isolated and logged through `_logger?.LogError(...)`, so a broker constructed with **no** logger
   (manual construction, or a host with no logging provider) dropped the failure with zero trace — no

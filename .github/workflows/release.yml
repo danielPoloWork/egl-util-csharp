@@ -78,6 +78,23 @@ jobs:
             exit 1
           fi
 
+      # Generate a CycloneDX SBOM for the package and attach it to the release (#47, ADR-0031;
+      # docs/workflow/packaging.md calls for provenance/SBOM). Runs the pinned CycloneDX .NET tool over the
+      # single packable project — which references Domain + Application — producing a CycloneDX JSON bill of
+      # materials of the shipped dependency graph. Under CI (GITHUB_ACTIONS=true) the tool's restore honors
+      # RestoreLockedMode, so it reads the committed lockfile.
+      - name: Generate a CycloneDX SBOM
+        shell: bash
+        run: |
+          dotnet tool install --global CycloneDX --version 6.2.0
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          version="${GITHUB_REF_NAME#v}"
+          dotnet CycloneDX \
+            src/main/csharp/it/d4np/util/Infrastructure/It.D4np.Util.Infrastructure.csproj \
+            --output ./artifacts --output-format Json \
+            --filename "It.D4np.Util.${version}.sbom.json" \
+            --set-name It.D4np.Util --set-version "$version"
+
       # The curated notes under docs/releases/<tag>.md are the reviewed release artifact (docs/workflow/
       # release.md step 4). Require them so a tag cannot be drafted with only GitHub's auto-generated body
       # (#73); the draft step below uses this file as the release body.
@@ -101,6 +118,7 @@ jobs:
           files: |
             ./artifacts/*.nupkg
             ./artifacts/*.snupkg
+            ./artifacts/*.sbom.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
