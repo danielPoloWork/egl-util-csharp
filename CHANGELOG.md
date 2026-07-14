@@ -136,6 +136,17 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- The symbol package (`.snupkg`) is now genuinely debuggable: SourceLink + all three assemblies' PDBs
+  (#36, #66). The package set `IncludeSymbols`/`SymbolPackageFormat=snupkg` but shipped **no** SourceLink
+  metadata (a consumer stepping in with symbol servers got symbols with no source URL, so no source was
+  fetched — #36), and the bundling target packed only the referenced projects' `.dll`/`.xml`, so the snupkg
+  contained **only** `It.D4np.Util.Infrastructure.pdb` — the Domain and Application layers (Entity, Result,
+  ValueObject, …) were undebuggable via the symbol server (#66). Added `Microsoft.SourceLink.GitHub` plus
+  `PublishRepositoryUrl`/`EmbedUntrackedSources`/`DebugType=portable` in `Directory.Build.props` (so all
+  three assemblies' PDBs carry the source-link document), and taught the pack target to include the bundled
+  projects' PDBs. Verified by a pack smoke check: the snupkg now contains all three PDBs, the nupkg still
+  ships only the DLLs/XML docs (no PDBs), and each PDB's SourceLink resolves to the GitHub raw URL at the
+  built commit. Packaging only; the library API is unchanged.
 - `SpecificationEvaluator` now rejects a specification that defines **both** `OrderBy` and
   `OrderByDescending` (#88). The primary ordering is a single ascending *or* descending key; the
   `Specification` base class enforces this (each `ApplyOrderBy*` resets the other), but a direct
