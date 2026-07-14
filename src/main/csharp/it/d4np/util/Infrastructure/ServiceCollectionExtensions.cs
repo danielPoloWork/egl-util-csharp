@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 using FluentValidation;
 
@@ -47,7 +48,12 @@ public static class ServiceCollectionExtensions
     /// <see cref="CacheService"/>), MediatR itself, and — for event delivery — logging. Assembly
     /// scanning registers every concrete <see cref="IEventHandler{TEvent}"/> and
     /// <see cref="IValidator{T}"/> as transient; open-generic type definitions are skipped (DI cannot
-    /// construct them). When no assembly is given, the calling assembly is scanned.
+    /// construct them). When no assembly is given, the assembly that <em>directly</em> calls this method is
+    /// scanned (via <see cref="Assembly.GetCallingAssembly"/>; the method is marked
+    /// <see cref="MethodImplOptions.NoInlining"/> so the JIT cannot fold that frame away and resolve the
+    /// wrong assembly — #90). Note this means a wrapper: a shared-library convenience/extension method that
+    /// forwards to <c>AddD4npUtil()</c> makes the <em>wrapper's</em> assembly the scan target, not the
+    /// application's. From such a wrapper, pass the intended assemblies explicitly.
     /// </para>
     /// <para>
     /// <see cref="ISpecification{TEntity}"/> implementations are intentionally <em>not</em> registered.
@@ -69,6 +75,10 @@ public static class ServiceCollectionExtensions
     [RequiresUnreferencedCode(
         "Assembly-scans for IEventHandler<> and IValidator<> implementations via Assembly.GetTypes; the " +
         "discovered handler and validator types may be trimmed.")]
+    // The no-argument default scan uses Assembly.GetCallingAssembly(); NoInlining keeps this frame on the
+    // stack so the JIT cannot inline the method into its caller and make GetCallingAssembly() resolve the
+    // caller's caller (silently scanning the wrong assembly and registering nothing) (#90).
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static IServiceCollection AddD4npUtil(this IServiceCollection services, params Assembly[] assemblies)
     {
         ArgumentNullException.ThrowIfNull(services);
