@@ -3,7 +3,7 @@ namespace It.D4np.Util.Domain;
 /// <summary>
 /// Marker interface for domain events — an immutable record of something significant that
 /// happened in the domain. Aggregates raise events through
-/// <see cref="AggregateRoot{TId}.RaiseDomainEvent"/>; an infrastructure boundary later collects
+/// <see cref="AggregateRoot{TId, TAggregate}.RaiseDomainEvent"/>; an infrastructure boundary later collects
 /// and dispatches them.
 /// </summary>
 public interface IDomainEvent

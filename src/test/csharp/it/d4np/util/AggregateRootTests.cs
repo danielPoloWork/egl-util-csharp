@@ -6,7 +6,7 @@ public class AggregateRootTests
 {
     private sealed record Registered(DateTime OccurredOnUtc) : IDomainEvent;
 
-    private sealed class Account(Guid id) : AggregateRoot<Guid>(id)
+    private sealed class Account(Guid id) : AggregateRoot<Guid, Account>(id)
     {
         public void Record(IDomainEvent domainEvent) => RaiseDomainEvent(domainEvent);
     }

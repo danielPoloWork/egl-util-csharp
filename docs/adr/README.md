@@ -43,3 +43,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0025](0025-add-specification-then-by-ordering.md) | Add ThenBy/ThenByDescending secondary ordering to the Specification | Accepted |
 | [0026](0026-add-domain-event-notification-factory.md) | Add a DomainEventNotification factory so the MediatR bridge works for runtime-typed events | Accepted |
 | [0027](0027-variance-aware-event-dispatch.md) | Make EventBroker dispatch honor IEventHandler contravariance | Accepted |
+| [0028](0028-canonical-type-entity-equality-and-transient-identity.md) | Canonical-type entity equality and transient identity (self-referencing Entity&lt;TId, TEntity&gt;) — **breaking (2.0)** | Accepted |
