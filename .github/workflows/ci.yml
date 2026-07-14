@@ -114,3 +114,32 @@ jobs:
       # `--collect:"XPlat Code Coverage"` wrote a Cobertura file that nothing read (issue #24). The
       # test run fails if total line coverage drops below the threshold (ADR-0016).
       - run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total
+
+  # ---------------------------------------------------------------------------
+  # Exercise the single-package pack on every PR (#64): run `dotnet pack` and assert the produced
+  # nupkg bundles all three layer assemblies, so a regression in the IncludeReferencedProjectsInPackage
+  # target (a dropped Domain/Application DLL, or a pack error) fails CI instead of shipping silently in a
+  # patch. API-compatibility validation (EnablePackageValidation + a baseline) is deferred to the 2.0 cut,
+  # since the current surface already carries the accrued 2.0-breaking changes and would fail a 1.0.0 baseline.
+  # ---------------------------------------------------------------------------
+  package:
+    name: package / pack + bundling
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with: { dotnet-version: '8.0.x' }
+      - name: Pack and assert the bundled assemblies are present
+        shell: bash
+        run: |
+          dotnet pack src/main/csharp/it/d4np/util/Infrastructure/It.D4np.Util.Infrastructure.csproj -c Release -o ./artifacts
+          nupkg=$(find ./artifacts -name 'It.D4np.Util.*.nupkg' | head -1)
+          if [ -z "$nupkg" ]; then echo "::error::dotnet pack produced no .nupkg"; exit 1; fi
+          for dll in It.D4np.Util.Domain.dll It.D4np.Util.Application.dll It.D4np.Util.Infrastructure.dll; do
+            if ! unzip -l "$nupkg" | grep -q "lib/net8.0/$dll"; then
+              echo "::error::packed nupkg is missing lib/net8.0/$dll — the bundling target dropped a layer (#64)"
+              exit 1
+            fi
+          done
+          echo "OK: the nupkg bundles all three layer assemblies."

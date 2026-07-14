@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-14 — CI: enforce the bundling invariant + pack on every PR (#63, #64)](2026/07/2026-07-14-ci-bundling-invariant-and-pack-gate.md)
 - [2026-07-14 — CI: CodeQL + dependency review + CycloneDX SBOM (#47)](2026/07/2026-07-14-ci-codeql-dependency-review-sbom.md)
 - [2026-07-14 — CI: pin setup-dotnet to a SHA + quality-job timeout (#84, #75)](2026/07/2026-07-14-ci-pin-setup-dotnet-and-quality-timeout.md)
 - [2026-07-14 — CI: release gating (full CI) + curated release notes (#37, #73)](2026/07/2026-07-14-ci-release-gating-and-curated-notes.md)

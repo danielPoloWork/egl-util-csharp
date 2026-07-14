@@ -29,6 +29,9 @@ contract (the "congruence checks"):
      English source, and the check fails if the source's current digest differs (the source
      changed and the translation was not re-synced). Content-based, so it is stable across
      the repository's squash-merge.
+  8. bundled-deps    — (single-package layout only) every PackageReference of a bundled project
+     appears, at an identical version, in the packable project — so the nuspec's dependency group
+     covers every third-party assembly the bundled DLLs reference (#63).
 
 Each check is independent; all run, then the report lists every failure. The checks are
 designed to PASS on a freshly-generated repository (empty catalogues, no releases yet).
@@ -60,6 +63,14 @@ CONFIG = {
     "src_main": "src/main/csharp/it/d4np/util",
     # Whether documentation i18n is enabled (gates check 7).
     "i18n_enabled": True,
+    # Single-package bundling (check 8): the one packable project bundles the referenced projects'
+    # outputs (PrivateAssets=all), so their PackageReferences do NOT flow into the nuspec and must be
+    # mirrored — at an identical version — in the packable project. Empty/None disables the check.
+    "packable_project": "src/main/csharp/it/d4np/util/Infrastructure/It.D4np.Util.Infrastructure.csproj",
+    "bundled_projects": [
+        "src/main/csharp/it/d4np/util/Domain/It.D4np.Util.Domain.csproj",
+        "src/main/csharp/it/d4np/util/Application/It.D4np.Util.Application.csproj",
+    ],
 }
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -417,6 +428,49 @@ def check_i18n_freshness():
                        f"current {actual[: len(recorded)]}) — re-sync the translation and update the digest")
 
 
+# ---------------------------------------------------------------------------
+# 8. Single-package bundling: bundled projects' deps mirrored in the packable one
+# ---------------------------------------------------------------------------
+def _package_references(text):
+    # id -> version (version None when the PackageReference carries no Version attribute). Tolerant of
+    # attribute order and self-closing vs child-element forms.
+    refs = {}
+    for tag in re.findall(r"<PackageReference\b[^>]*>", text):
+        include = re.search(r'Include="([^"]+)"', tag)
+        version = re.search(r'Version="([^"]+)"', tag)
+        if include:
+            refs[include.group(1)] = version.group(1) if version else None
+    return refs
+
+
+def check_bundled_deps():
+    name = "bundled-deps"
+    packable = CONFIG.get("packable_project")
+    bundled = CONFIG.get("bundled_projects") or []
+    if not packable or not bundled:
+        return  # not a single-bundled-package layout
+    if not exists(packable):
+        fail(name, f"packable project {packable} is missing")
+        return
+    packable_refs = _package_references(read(*packable.split("/")))
+    for project in bundled:
+        if not exists(project):
+            fail(name, f"bundled project {project} is missing")
+            continue
+        for package, version in _package_references(read(*project.split("/"))).items():
+            # A bundled project is referenced with PrivateAssets=all, so its dependencies never flow into
+            # the nuspec — the packable project must declare each of them, at the same version, or the
+            # published package's dependency group is incomplete/inconsistent (#63).
+            if package not in packable_refs:
+                fail(name, f"{project} references '{package}' but the packable project ({packable}) does "
+                           "not — a bundled (PrivateAssets=all) dependency absent from the nuspec (a consumer "
+                           "would hit FileNotFoundException). Mirror it in the packable project.")
+            elif version is not None and packable_refs[package] is not None and packable_refs[package] != version:
+                fail(name, f"bundled '{package}' is {version} in {project} but {packable_refs[package]} in the "
+                           "packable project — the nuspec floor would not match the bundled binary (a consumer "
+                           "restoring the declared minimum could hit MissingMethodException). Align the versions.")
+
+
 CHECKS = [
     check_version_lockstep,
     check_adr_index,
@@ -425,6 +479,7 @@ CHECKS = [
     check_milestones,
     check_bugs,
     check_i18n_freshness,
+    check_bundled_deps,
 ]
 
 
