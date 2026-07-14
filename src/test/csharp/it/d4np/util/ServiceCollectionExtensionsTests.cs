@@ -70,6 +70,13 @@ public class ServiceCollectionExtensionsTests
 
     private sealed class OpenGenericValidator<T> : AbstractValidator<T>;
 
+    // A stand-in IEventBroker a consumer might register to replace the default broker (#92).
+    private sealed class CustomBroker : IEventBroker
+    {
+        public ValueTask PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken = default)
+            where TEvent : class => ValueTask.CompletedTask;
+    }
+
     private static ServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
@@ -122,6 +129,31 @@ public class ServiceCollectionExtensionsTests
         EventBroker hosted = Assert.Single(provider.GetServices<IHostedService>().OfType<EventBroker>());
 
         Assert.Same(broker, hosted); // the IEventBroker and the hosted service are one instance
+    }
+
+    [Fact]
+    public async Task Overriding_the_event_broker_disables_the_default_broker_and_its_hosted_service()
+    {
+        // #92: a consumer that pre-registers its own IEventBroker must fully replace the default broker.
+        // The whole cluster is gated on IEventBroker being absent, so the library registers neither its
+        // concrete EventBroker nor a hosted service for it — otherwise the default broker would still run
+        // as a phantom background service (a consumer loop nothing publishes to) while the replacement
+        // stayed un-hosted. The "overridable" contract in the XML remarks is only true with this gate.
+        var custom = new CustomBroker();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions()));
+        services.AddSingleton<IDistributedCache>(
+            new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions())));
+        services.AddSingleton<IEventBroker>(custom); // pre-registered override, before AddD4npUtil
+
+        services.AddD4npUtil(typeof(ServiceCollectionExtensionsTests).Assembly);
+
+        await using ServiceProvider provider = services.BuildServiceProvider();
+
+        Assert.Same(custom, provider.GetRequiredService<IEventBroker>()); // the override wins
+        Assert.Null(provider.GetService<EventBroker>()); // the default concrete broker was not registered
+        Assert.Empty(provider.GetServices<IHostedService>().OfType<EventBroker>()); // nothing hosts it (no phantom)
     }
 
     [Fact]
