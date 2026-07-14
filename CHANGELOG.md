@@ -116,6 +116,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- Overriding `IEventBroker` now actually disables the default broker (#92). `AddD4npUtil` advertised the
+  core singletons as "overridable — each uses `TryAdd`", but only the `IEventBroker` **mapping** was gated:
+  the concrete `EventBroker` and its `IHostedService` were registered unconditionally. So a consumer who
+  pre-registered their own `IEventBroker` still got the library's broker **constructed and started** as a
+  hosted service — a phantom consumer loop and channel nothing publishes to — while their replacement went
+  un-hosted. The whole broker cluster (concrete type, mapping, and hosted service) is now gated on
+  `IEventBroker` being absent, so a pre-registered override fully replaces the default and no phantom broker
+  runs. No API change; non-overriding consumers are unaffected. If you want your replacement broker hosted,
+  register it as an `IHostedService` yourself (documented in the `AddD4npUtil` remarks).
 - `EventBroker`'s per-event dispatch-plan cache is now per-broker instead of process-static (#44). The
   `ConcurrentDictionary<Type, EventDispatch>` was `static`, so it outlived every broker/provider and pinned
   a closed generic type + compiled delegate for each distinct **published runtime type** for the whole

@@ -25,12 +25,20 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Registered as singletons (overridable — each uses <c>TryAdd</c>): <see cref="IDateTimeProvider"/>
+    /// Registered as singletons (overridable — see below): <see cref="IDateTimeProvider"/>
     /// → <see cref="DateTimeProvider"/>, <see cref="IPasswordHasher"/> → <see cref="PasswordHasher"/>,
     /// <see cref="ICacheService"/> → <see cref="CacheService"/>, and <see cref="IEventBroker"/> →
     /// <see cref="EventBroker"/> (the same instance also runs as an <c>IHostedService</c>). The
     /// <see cref="ValidationPipelineBehavior{TRequest, TResponse}"/> is registered as an open-generic
     /// MediatR <see cref="IPipelineBehavior{TRequest, TResponse}"/>.
+    /// </para>
+    /// <para>
+    /// <b>Overriding a default.</b> Register your own implementation <em>before</em> calling this: the core
+    /// services use <c>TryAdd</c>, so the first registration wins. Overriding <see cref="IEventBroker"/>
+    /// disables the default broker <em>entirely</em> — the concrete <see cref="EventBroker"/> and its
+    /// <c>IHostedService</c> are registered only when no <see cref="IEventBroker"/> is already present, so a
+    /// replacement never leaves the default broker running as a phantom background service (#92). If you want
+    /// your replacement broker hosted, register it as an <c>IHostedService</c> yourself.
     /// </para>
     /// <para>
     /// The consumer supplies the runtime dependencies this wiring assumes: an
@@ -72,12 +80,20 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IPasswordHasher, PasswordHasher>();
         services.TryAddSingleton<ICacheService, CacheService>();
 
-        // One EventBroker instance, exposed as IEventBroker and run as a hosted service. AddHostedService's
-        // factory overload uses TryAddEnumerable keyed on EventBroker, so it is idempotent across repeated
-        // calls while still resolving the single registered EventBroker.
-        services.TryAddSingleton<EventBroker>();
-        services.TryAddSingleton<IEventBroker>(static provider => provider.GetRequiredService<EventBroker>());
-        services.AddHostedService(static provider => provider.GetRequiredService<EventBroker>());
+        // One EventBroker instance, exposed as IEventBroker and run as a hosted service. The whole cluster —
+        // the concrete broker, the IEventBroker mapping, AND the hosted service that runs it — is gated on
+        // IEventBroker being absent, so a consumer overrides the broker by registering their own IEventBroker
+        // BEFORE calling this. Gating only the mapping (TryAdd) would still register and START the default
+        // broker as a hosted service — a phantom consumer loop nothing publishes to — while leaving the
+        // replacement un-hosted; the override must disable the default broker entirely (#92). The gate also
+        // makes the registrations idempotent across repeated AddD4npUtil calls (the first call adds the
+        // mapping, so a second finds it present and skips).
+        if (services.All(static descriptor => descriptor.ServiceType != typeof(IEventBroker)))
+        {
+            services.TryAddSingleton<EventBroker>();
+            services.TryAddSingleton<IEventBroker>(static provider => provider.GetRequiredService<EventBroker>());
+            services.AddHostedService(static provider => provider.GetRequiredService<EventBroker>());
+        }
 
         // Run FluentValidation validators as a MediatR pipeline step. TryAddEnumerable (keyed on the
         // implementation type) keeps this idempotent, so calling AddD4npUtil more than once — e.g. a
