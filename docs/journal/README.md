@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-14 — Fix: SpecificationEvaluator rejects both-orderings specs (#88)](2026/07/2026-07-14-fix-spec-both-orderings-rejected.md)
 - [2026-07-14 — Fix: Error constructor null guards + inlining-safe default scan (#76, #90)](2026/07/2026-07-14-fix-error-null-guard-and-noinlining-scan.md)
 - [2026-07-14 — Fix: overriding IEventBroker disables the default broker + hosted service (#92)](2026/07/2026-07-14-fix-eventbroker-override-disables-default.md)
 - [2026-07-14 — Fix: EventBroker failure visibility (EventSource) + per-broker dispatch cache (#43, #44)](2026/07/2026-07-14-fix-eventbroker-failure-visibility-and-cache-scope.md)
