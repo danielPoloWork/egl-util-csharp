@@ -1,0 +1,31 @@
+name: dependency-review
+
+# Supply-chain gate for egl-util-csharp (#47, ADR-0031). On every pull request it diffs the dependency
+# manifest against the base branch and fails if the PR introduces a dependency with a known vulnerability
+# (or, once configured, a disallowed license), posting a summary on the PR when it blocks. Complements the
+# grouped Dependabot updates (.github/dependabot.yml), which keep dependencies current but do not gate a PR.
+# Runs only on pull_request (the action diffs the PR). Requires the repository Dependency Graph and Actions
+# billing to be enabled.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: dependency-review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write # post the summary comment when the review blocks the PR
+    steps:
+      - name: Check out the source tree
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          comment-summary-in-pr: on-failure
