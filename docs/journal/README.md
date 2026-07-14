@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-14 — Fix: enforce the V1 salt/key length in PasswordHasher.Verify (#40)](2026/07/2026-07-14-fix-passwordhasher-v1-length-enforcement.md)
 - [2026-07-14 — Docs: document the paged-but-unordered exception (#81)](2026/07/2026-07-14-docs-paged-unordered-exception.md)
 - [2026-07-14 — Fix: canonical-type entity equality + transient identity (#25, #26) — breaking (2.0)](2026/07/2026-07-14-fix-entity-canonical-equality-transient-identity.md)
 - [2026-07-14 — Fix: variance-aware EventBroker dispatch (#71)](2026/07/2026-07-14-fix-variance-aware-event-dispatch.md)

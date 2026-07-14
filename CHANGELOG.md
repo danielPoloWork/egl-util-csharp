@@ -96,6 +96,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `PasswordHasher.Verify` now enforces the V1 scheme's fixed **16-byte salt and 32-byte key** (#40). It
+  previously checked only that the decoded salt and key were non-empty, so a well-formed but off-spec hash
+  (e.g. a 1-byte salt or an 8-byte key) was fed to PBKDF2 rather than rejected — the documented "V1"
+  parameters were unenforced on the verify path. Such hashes now return `false`. No API change (no auth
+  bypass; the attacker still needs the password).
 - `EventBroker` now honors `IEventHandler`'s contravariance (#71). `IEventHandler<in TEvent>` is declared
   contravariant, but the broker resolved handlers by the event's **exact** runtime type, and MS.DI applies
   no generic variance to `IEnumerable<T>`, so a handler registered for a base type or a catch-all

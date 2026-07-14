@@ -138,6 +138,25 @@ public class PasswordHasherTests
     }
 
     [Fact]
+    public void Verify_rejects_an_off_spec_salt_or_key_length_even_when_the_derived_key_would_match()
+    {
+        // #40: enforce the V1 scheme's fixed 16-byte salt / 32-byte key. Each hash below carries a
+        // CORRECTLY derived key for its (off-spec) parameters, so it would validate under the pre-fix
+        // guards (salt/key merely non-empty); the length enforcement now rejects it. A wrong-length *zero*
+        // key would fail regardless, so it would not distinguish the fix.
+        var hasher = new PasswordHasher();
+        const int iterations = PasswordHasher.MinimumIterations;
+
+        byte[] shortSalt = RandomNumberGenerator.GetBytes(8); // off-spec salt (8 != 16)
+        byte[] keyForShortSalt = Rfc2898DeriveBytes.Pbkdf2(Password, shortSalt, iterations, HashAlgorithmName.SHA256, 32);
+        Assert.False(hasher.Verify(Password, ComposeHash(iterations, shortSalt, keyForShortSalt)));
+
+        byte[] salt = RandomNumberGenerator.GetBytes(16);
+        byte[] shortKey = Rfc2898DeriveBytes.Pbkdf2(Password, salt, iterations, HashAlgorithmName.SHA256, 8); // off-spec key (8 != 32)
+        Assert.False(hasher.Verify(Password, ComposeHash(iterations, salt, shortKey)));
+    }
+
+    [Fact]
     public void Verify_returns_false_when_the_stored_salt_is_tampered()
     {
         var hasher = new PasswordHasher();
