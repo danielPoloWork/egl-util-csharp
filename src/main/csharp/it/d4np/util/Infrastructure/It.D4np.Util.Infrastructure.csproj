@@ -56,7 +56,10 @@
   </ItemGroup>
 
   <!-- Bundle the (PrivateAssets=all) referenced project outputs — Domain and Application, plus their
-       XML docs — into the package's lib folder alongside Infrastructure. -->
+       XML docs and PDBs — into the package's build output alongside Infrastructure. pack filters
+       BuildOutputInPackage by extension: the .dll/.xml go into the nupkg's lib folder, while the .pdb items
+       go into the .snupkg symbol package. Without the .pdb line the snupkg shipped only Infrastructure's
+       PDB, leaving Domain and Application permanently undebuggable via the symbol server (#66). -->
   <Target Name="IncludeReferencedProjectsInPackage" DependsOnTargets="ResolveReferences">
     <ItemGroup>
       <_ReferencedProjectDll Include="@(ReferenceCopyLocalPaths)"
@@ -64,6 +67,8 @@
       <BuildOutputInPackage Include="@(_ReferencedProjectDll)" />
       <BuildOutputInPackage Include="@(_ReferencedProjectDll->'%(RootDir)%(Directory)%(Filename).xml')"
                             Condition="Exists('%(RootDir)%(Directory)%(Filename).xml')" />
+      <BuildOutputInPackage Include="@(_ReferencedProjectDll->'%(RootDir)%(Directory)%(Filename).pdb')"
+                            Condition="Exists('%(RootDir)%(Directory)%(Filename).pdb')" />
     </ItemGroup>
   </Target>
 

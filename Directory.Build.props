@@ -24,6 +24,16 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
     <Deterministic>true</Deterministic>
+    <!--
+      SourceLink + symbol settings (#36), applied to every project so the bundled Domain and Application
+      PDBs carry a source-link document too (not just Infrastructure). Portable PDBs are emitted as separate
+      files (required for the .snupkg); the repository URL is published into each PDB and untracked sources
+      are embedded, so a consumer with symbol servers enabled can fetch the exact source. ContinuousIntegration
+      Build (set on CI above) normalizes source paths for deterministic, server-resolvable symbols.
+    -->
+    <DebugType>portable</DebugType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     <!--
@@ -37,5 +47,14 @@
     -->
     <RestoreLockedMode Condition="'$(GITHUB_ACTIONS)' == 'true'">true</RestoreLockedMode>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      SourceLink for GitHub (#36): embeds the repository URL + commit into every PDB so a symbol server can
+      resolve the exact source. Build-time only (PrivateAssets=all) — it is not a runtime/package dependency.
+      Applied here (all projects) so the package's bundled Domain and Application PDBs are source-linked too.
+    -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
+  </ItemGroup>
 
 </Project>
