@@ -11,8 +11,8 @@ internally congruent after any change. Run from anywhere in the repo:
 It exits non-zero with an actionable report when a congruence invariant is violated. The
 contract (the "congruence checks"):
 
-  1. version-lockstep — the version constant, the README `Status-vX.Y.Z` badge, the packable
-     project's <Version>, and the latest released changelog/release file (if any) agree;
+  1. version-lockstep — the single <Version> (Directory.Build.props), the README `Status-vX.Y.Z`
+     badge, and the latest released changelog/release file (if any) agree;
   2. adr-index       — every docs/adr/NNNN-*.md is indexed and every indexed ADR exists,
      with sequential numbering and no gap;
   3. patterns        — every Adopted/Planned catalogue row cites an existing ADR; an
@@ -45,15 +45,17 @@ import sys
 # CONFIG — filled by EADOS at generation time from orchestrator/project.yaml.
 # ---------------------------------------------------------------------------
 CONFIG = {
-    # The file holding the version constant, relative to the repo root, or None if the
-    # version lives only in a build manifest the lint should not parse. When None (or the
-    # file is absent), version-lockstep derives the source version from the README badge.
-    "version_file": "src/main/csharp/it/d4np/util/Domain/Version.cs",
+    # The file holding the single version literal, relative to the repo root, or None if the
+    # version lives only in a build manifest the lint should not parse. When None (or the file
+    # is absent), version-lockstep derives the source version from the README badge. The single
+    # source is the <Version> in Directory.Build.props, which the SDK stamps onto every assembly
+    # (LibraryVersion.Version reads it back at runtime — no hand-duplicated literal; #48/#86).
+    "version_file": "Directory.Build.props",
     # A regex with a single (\d+\.\d+\.\d+) group that extracts the version from that file.
-    "version_regex": r"(\d+\.\d+\.\d+)",
-    # The packable project manifest whose <Version> must match the source version, or None if the
-    # project is not packaged (or does not pin a version). Checked by version-lockstep.
-    "package_version_file": "src/main/csharp/it/d4np/util/Infrastructure/It.D4np.Util.Infrastructure.csproj",
+    "version_regex": r"<Version>(\d+\.\d+\.\d+)</Version>",
+    # A second manifest whose <Version> must match the source version, or None. The packable project
+    # inherits <Version> from Directory.Build.props (the source above), so there is no second literal.
+    "package_version_file": None,
     # The source root that pattern code-locations must live under.
     "src_main": "src/main/csharp/it/d4np/util",
     # Whether documentation i18n is enabled (gates check 7).

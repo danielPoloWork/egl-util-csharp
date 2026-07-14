@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-14 — Fix: runtime-resolved, single-source library version (#48, #86) — breaking (2.0)](2026/07/2026-07-14-fix-runtime-resolved-single-source-version.md)
 - [2026-07-14 — CI: consistency_lint hardening + drop the deep clone (#72, #74, #82, #96)](2026/07/2026-07-14-ci-consistency-lint-hardening.md)
 - [2026-07-14 — Fix: SpecificationEvaluator rejects both-orderings specs (#88)](2026/07/2026-07-14-fix-spec-both-orderings-rejected.md)
 - [2026-07-14 — Fix: Error constructor null guards + inlining-safe default scan (#76, #90)](2026/07/2026-07-14-fix-error-null-guard-and-noinlining-scan.md)

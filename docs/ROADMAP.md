@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-14 — ci: consistency_lint hardening + drop the deep clone (#72, #74, #82, #96)](journal/2026/07/2026-07-14-ci-consistency-lint-hardening.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-14 — fix: runtime-resolved, single-source library version (#48, #86) — breaking (2.0)](journal/2026/07/2026-07-14-fix-runtime-resolved-single-source-version.md).
 
 ---
 
