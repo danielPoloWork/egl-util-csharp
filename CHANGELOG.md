@@ -65,6 +65,18 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- The single-package bundling invariant is now enforced, and CI packs on every PR (#63, #64). The package
+  bundles the Domain/Application assemblies as `PrivateAssets=all` project references, so their
+  `PackageReference`s do not flow into the nuspec and must be mirrored — at an identical version — in the
+  packable project; nothing checked this (a version bumped only in a bundled project, or a new dependency
+  added only there, would ship a nuspec that disagrees with the bundled binaries — `MissingMethodException`
+  / `FileNotFoundException` in a consumer). `tools/consistency_lint.py` gains a `bundled-deps` check that
+  fails when a bundled project's `PackageReference` is missing from, or version-mismatched against, the
+  packable project (#63). And a new `package` CI job runs `dotnet pack` on every PR and asserts the produced
+  nupkg bundles all three layer assemblies, so a regression in the bundling target fails CI instead of
+  shipping in a patch (#64). Full `EnablePackageValidation`/API-compat baselining is deferred to the 2.0 cut
+  (the current surface already carries the accrued 2.0-breaking changes and would fail a 1.0.0 baseline).
+  Repo/CI change only; the shipped package is unchanged.
 - CI hardening: `actions/setup-dotnet` is pinned to a commit SHA, and the `quality` job now has a timeout
   (#84, #75). `setup-dotnet` was the only action referenced by a mutable tag (`@v5`) while every other action
   is SHA-pinned; a moved/compromised `v5` tag would run arbitrary code in CI — including `release.yml`, whose
