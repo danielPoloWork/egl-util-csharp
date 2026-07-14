@@ -45,3 +45,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0027](0027-variance-aware-event-dispatch.md) | Make EventBroker dispatch honor IEventHandler contravariance | Accepted |
 | [0028](0028-canonical-type-entity-equality-and-transient-identity.md) | Canonical-type entity equality and transient identity (self-referencing Entity&lt;TId, TEntity&gt;) — **breaking (2.0)** | Accepted |
 | [0029](0029-passwordhasher-rehash-detection-and-span-plaintext.md) | Add rehash-detection and span-based plaintext to IPasswordHasher | Accepted |
+| [0030](0030-runtime-resolved-single-source-library-version.md) | Resolve the library version at runtime from a single MSBuild source — **breaking (2.0)** | Accepted |

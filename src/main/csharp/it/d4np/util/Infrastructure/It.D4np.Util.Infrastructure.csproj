@@ -30,12 +30,12 @@
     <Description>Infrastructure building blocks for egl-util-csharp: EF Core specification evaluation, domain-event dispatch around SaveChanges, PBKDF2 password hashing, a two-level cache over IMemoryCache/IDistributedCache, the system-clock provider, and DI auto-registration.</Description>
   </PropertyGroup>
 
-  <!-- NuGet package metadata for the single It.D4np.Util package. Version is kept in lockstep with
-       Version.cs and the README badge (bumped in the release PR). -->
+  <!-- NuGet package metadata for the single It.D4np.Util package. The package <Version> is inherited from
+       the single <Version> in Directory.Build.props (#48); bump it there in the release PR, in lockstep with
+       the README badge (enforced by tools/consistency_lint.py). -->
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>It.D4np.Util</PackageId>
-    <Version>1.0.0</Version>
     <Authors>Daniel Polo</Authors>
     <Product>egl-util-csharp</Product>
     <PackageDescription>Strongly-typed DDD, Clean Architecture, CQRS and functional Result building blocks for .NET 8: entities, value objects, aggregates, the Result/Error model, repository/specification/unit-of-work, an in-memory event broker, PBKDF2 password hashing, FluentValidation pipeline behavior, and a two-level cache.</PackageDescription>

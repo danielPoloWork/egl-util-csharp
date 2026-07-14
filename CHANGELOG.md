@@ -58,6 +58,16 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **BREAKING:** `LibraryVersion.Version` is now a runtime-resolved property instead of a `public const`, and
+  the version is single-sourced in MSBuild (#48, #86, ADR-0030). It previously duplicated the `1.0.0` literal
+  in the packable project's `<Version>` and in `Version.cs` (coupled only by the lint), and as a `const` it
+  was **inlined** into every consumer at their compile time — so an in-place library upgrade left the
+  consumer reporting the old version. The single `<Version>` now lives in `Directory.Build.props` (stamped
+  onto every assembly and inherited as the NuGet package version), and `LibraryVersion.Version` is a
+  `public static string { get; }` resolved at runtime from the loaded assembly's informational version. A
+  **MAJOR** change (2.0): a consumer compiled against the 1.x `const` must be recompiled to pick up the
+  property, and `Version` can no longer be used in a `const` context (attribute argument, `case` label);
+  ordinary reads are source-compatible. The Domain layer stays dependency-free.
 - The `consistency_lint.py` congruence checks are tightened and the consistency CI job no longer deep-clones
   (#72, #74, #82, #96). `check_milestones` now asserts README ↔ ROADMAP completion in **both** directions
   (previously only README-complete-but-ROADMAP-open failed) and flags a README milestone with no ROADMAP
