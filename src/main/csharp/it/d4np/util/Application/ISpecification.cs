@@ -48,6 +48,11 @@ public interface ISpecification<TEntity>
     /// <summary>The number of elements to take when <see cref="IsPagingEnabled"/> is <see langword="true"/>.</summary>
     int Take { get; }
 
-    /// <summary>Whether <see cref="Skip"/>/<see cref="Take"/> paging should be applied.</summary>
+    /// <summary>
+    /// Whether <see cref="Skip"/>/<see cref="Take"/> paging should be applied. Paging requires a primary
+    /// ordering (<see cref="OrderBy"/> or <see cref="OrderByDescending"/>): the evaluator rejects a
+    /// paged-but-unordered specification with an <see cref="System.InvalidOperationException"/>, since
+    /// paging an unordered query is non-deterministic across pages on relational providers.
+    /// </summary>
     bool IsPagingEnabled { get; }
 }

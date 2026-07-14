@@ -16,6 +16,11 @@ public static class SpecificationEvaluator
     /// <param name="specification">The specification to apply.</param>
     /// <returns>The composed queryable, ready to enumerate or count.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="source"/> or <paramref name="specification"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// <paramref name="specification"/> enables paging (<c>IsPagingEnabled</c>) but defines no primary
+    /// ordering (<c>OrderBy</c> / <c>OrderByDescending</c>): paging an unordered query returns rows in an
+    /// undefined order across pages on relational providers, so it is rejected rather than run.
+    /// </exception>
     public static IQueryable<TEntity> GetQuery<TEntity>(IQueryable<TEntity> source, ISpecification<TEntity> specification)
         where TEntity : class
     {
