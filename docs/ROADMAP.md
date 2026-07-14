@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-14 — feat: IPasswordHasher rehash-detection + span plaintext (#35, #41)](journal/2026/07/2026-07-14-feat-passwordhasher-rehash-and-span.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-14 — fix: RemoveAsync removes L2 before L1 (#91)](journal/2026/07/2026-07-14-fix-removeasync-l2-before-l1.md).
 
 ---
 

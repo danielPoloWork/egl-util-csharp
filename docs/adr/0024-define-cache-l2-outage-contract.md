@@ -34,8 +34,9 @@ Adopt a **transparent-write** outage contract; reads and removes still surface f
   serialization/contract error (a programming error, e.g. a non-round-trippable type per ADR-0023)
   propagates rather than being swallowed as an "outage".
 - **Reads and removes propagate.** An L2 fault *reading* (before the factory runs) fails the call, and an
-  L2 fault in `RemoveAsync` propagates (L1 has already been cleared, so L2 may be left stale). Both are
-  now documented on `CacheService`.
+  L2 fault in `RemoveAsync` propagates. `RemoveAsync` removes L2 before L1 (the standard cache-aside order,
+  adopted in #91 to close a same-node re-promotion window), so such a fault leaves **both** levels
+  populated rather than clearing L1 and leaving L2 stale. Both are documented on `CacheService`.
 
 ## Alternatives Considered
 

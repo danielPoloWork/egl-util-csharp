@@ -460,10 +460,10 @@ public sealed class CacheServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RemoveAsync_propagates_an_L2_fault_after_clearing_L1()
+    public async Task RemoveAsync_propagates_an_L2_fault_before_clearing_L1()
     {
-        // #62 / ADR-0024: RemoveAsync clears L1 first, then L2; an L2 delete fault propagates (leaving L2
-        // possibly stale) but L1 has already been cleared.
+        // #91 + #62 / ADR-0024: RemoveAsync removes L2 first, then L1, so an L2 delete fault propagates
+        // before L1 is touched — both levels keep the entry (no L1-cleared-but-L2-stale inconsistency).
         using var l1 = new MemoryCache(new MemoryCacheOptions());
         var l2 = new FaultyDistributedCache(removeFault: new InvalidOperationException("redis down"));
         var cache = new CacheService(l1, l2);
@@ -471,7 +471,7 @@ public sealed class CacheServiceTests : IDisposable
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => cache.RemoveAsync("k").AsTask());
 
-        Assert.False(l1.TryGetValue("k", out Widget? _)); // L1 was cleared before the L2 delete threw
+        Assert.True(l1.TryGetValue("k", out Widget? _)); // L1 untouched — the L2 removal ran (and threw) first
     }
 
     // Injects provider faults on chosen operations to exercise the L2-outage contract (#62, ADR-0024).
