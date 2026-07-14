@@ -48,7 +48,9 @@ delivery and failure contract — this is the foundation later milestones build 
 - Infrastructure depends on `Microsoft.Extensions.Hosting.Abstractions`,
   `…DependencyInjection.Abstractions`, and `…Logging.Abstractions` (the allowed `Microsoft.Extensions`
   abstractions).
-- Dispatch is by the event's runtime type (documented on `IEventBroker.PublishAsync`).
+- Dispatch is by the event's runtime type (documented on `IEventBroker.PublishAsync`); it also reaches
+  handlers registered for the event's base types and interfaces, honoring `IEventHandler`'s contravariance
+  (added in ADR-0027).
 - Registration as a singleton `IEventBroker` **and** a hosted service is wired by the DI helper in
   Milestone 8.
 - An adversarial review of the diff hardened the implementation before merge: per-handler exception

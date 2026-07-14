@@ -13,8 +13,11 @@ namespace It.D4np.Util.Infrastructure;
 
 /// <summary>
 /// An in-memory <see cref="IEventBroker"/> backed by a bounded <c>System.Threading.Channels</c> channel
-/// and a single background consumer. Each published event is delivered to every registered
-/// <see cref="IEventHandler{TEvent}"/>, resolved from a fresh DI scope by the event's <b>runtime</b> type.
+/// and a single background consumer. Each published event is delivered, from a fresh DI scope, to every
+/// registered <see cref="IEventHandler{TEvent}"/> whose <c>TEvent</c> the event's <b>runtime</b> type is
+/// assignable to — its exact type and, honoring the interface's contravariance, any base type or
+/// interface (so an <c>IEventHandler&lt;IDomainEvent&gt;</c> receives every event); most-specific handlers
+/// run first (#71).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -148,33 +151,41 @@ public sealed class EventBroker : BackgroundService, IEventBroker
         // the already-succeeded dispatch as failed). AsyncServiceScope still disposes plain
         // IDisposable services synchronously, so this is strictly safer.
         await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
-        if (scope.ServiceProvider.GetService(dispatch.HandlerEnumerableType) is not IEnumerable handlers)
-        {
-            return;
-        }
 
         // Mark this flow as "inside dispatch" so a handler's re-entrant PublishAsync takes the
         // non-blocking path. AsyncLocal flows into the awaited handler calls; reset afterwards.
         _dispatching.Value = true;
         try
         {
-            foreach (object? handler in handlers)
+            // IEventHandler<in TEvent> is contravariant, so dispatch to handlers registered for the event's
+            // runtime type AND each of its base types/interfaces, most-specific first. MS.DI applies no
+            // generic variance to IEnumerable<T>, so each applicable closed handler type is resolved
+            // explicitly (#71).
+            foreach (HandlerGroup group in dispatch.HandlerGroups)
             {
-                if (handler is null)
+                if (scope.ServiceProvider.GetService(group.EnumerableType) is not IEnumerable handlers)
                 {
                     continue;
                 }
 
-                try
+                foreach (object? handler in handlers)
                 {
-                    // Handlers run to completion with a non-cancelled token; the broker never force-cancels them.
-                    await dispatch.Invoke(handler, @event, CancellationToken.None).ConfigureAwait(false);
-                }
-                catch (Exception exception)
-                {
-                    // Isolate failures: one handler must not stop the consumer or its sibling handlers.
-                    _logger?.LogError(
-                        exception, "Event handler {HandlerType} failed for event {EventType}.", handler.GetType(), @event.GetType());
+                    if (handler is null)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        // Handlers run to completion with a non-cancelled token; the broker never force-cancels them.
+                        await group.Invoke(handler, @event, CancellationToken.None).ConfigureAwait(false);
+                    }
+                    catch (Exception exception)
+                    {
+                        // Isolate failures: one handler must not stop the consumer or its sibling handlers.
+                        _logger?.LogError(
+                            exception, "Event handler {HandlerType} failed for event {EventType}.", handler.GetType(), @event.GetType());
+                    }
                 }
             }
         }
@@ -184,37 +195,63 @@ public sealed class EventBroker : BackgroundService, IEventBroker
         }
     }
 
-    // Per-event-type dispatch, computed once and cached: the IEnumerable<IEventHandler<TEvent>> service
-    // type to resolve, plus a compiled delegate that calls HandleAsync directly (no reflection per
-    // dispatch, so handler exceptions surface as themselves rather than TargetInvocationException).
+    // Per-event-type dispatch, computed once and cached. IEventHandler<in TEvent> is contravariant, so an
+    // event is delivered to handlers registered for its runtime type AND any base type/interface. MS.DI
+    // does not apply variance when resolving IEnumerable<T>, so the applicable closed handler types are
+    // enumerated here (most-specific first), each with the IEnumerable<IEventHandler<T>> service type to
+    // resolve and a compiled delegate that calls HandleAsync directly (no reflection per dispatch, so
+    // handler exceptions surface as themselves rather than TargetInvocationException) (#71).
     private sealed class EventDispatch
     {
-        private readonly Func<object, object, CancellationToken, Task> _invoke;
+        private EventDispatch(IReadOnlyList<HandlerGroup> handlerGroups) => HandlerGroups = handlerGroups;
 
-        private EventDispatch(Type handlerEnumerableType, Func<object, object, CancellationToken, Task> invoke)
-        {
-            HandlerEnumerableType = handlerEnumerableType;
-            _invoke = invoke;
-        }
-
-        public Type HandlerEnumerableType { get; }
-
-        public Task Invoke(object handler, object @event, CancellationToken cancellationToken) =>
-            _invoke(handler, @event, cancellationToken);
+        public IReadOnlyList<HandlerGroup> HandlerGroups { get; }
 
         public static EventDispatch ForEventType(Type eventType)
         {
-            Type handlerType = typeof(IEventHandler<>).MakeGenericType(eventType);
-            Type enumerableType = typeof(IEnumerable<>).MakeGenericType(handlerType);
-            var invoke = (Func<object, object, CancellationToken, Task>)typeof(EventDispatch)
-                .GetMethod(nameof(BuildInvoker), BindingFlags.NonPublic | BindingFlags.Static)!
-                .MakeGenericMethod(eventType)
-                .Invoke(null, null)!;
-            return new EventDispatch(enumerableType, invoke);
+            var groups = new List<HandlerGroup>();
+            foreach (Type handledType in ContravariantHandledTypes(eventType))
+            {
+                Type enumerableType =
+                    typeof(IEnumerable<>).MakeGenericType(typeof(IEventHandler<>).MakeGenericType(handledType));
+                var invoke = (Func<object, object, CancellationToken, Task>)typeof(EventDispatch)
+                    .GetMethod(nameof(BuildInvoker), BindingFlags.NonPublic | BindingFlags.Static)!
+                    .MakeGenericMethod(handledType)
+                    .Invoke(null, null)!;
+                groups.Add(new HandlerGroup(enumerableType, invoke));
+            }
+
+            return new EventDispatch(groups);
+        }
+
+        // The set of T for which IEventHandler<T> can consume this event by contravariance: the runtime
+        // type, then its base classes up to object, then every interface it implements. TEvent : class, so
+        // all are reference types. Most-specific first, so exact-type handlers run before base-typed ones.
+        private static IEnumerable<Type> ContravariantHandledTypes(Type eventType)
+        {
+            for (Type? type = eventType; type is not null; type = type.BaseType)
+            {
+                yield return type;
+            }
+
+            foreach (Type contract in eventType.GetInterfaces())
+            {
+                yield return contract;
+            }
         }
 
         private static Func<object, object, CancellationToken, Task> BuildInvoker<TEvent>()
             where TEvent : class =>
             (handler, @event, cancellationToken) => ((IEventHandler<TEvent>)handler).HandleAsync((TEvent)@event, cancellationToken);
+    }
+
+    // One applicable closed handler type for an event: the IEnumerable<IEventHandler<T>> to resolve from
+    // the scope, and the delegate that invokes IEventHandler<T>.HandleAsync (casting the event to T).
+    private sealed class HandlerGroup(Type enumerableType, Func<object, object, CancellationToken, Task> invoke)
+    {
+        public Type EnumerableType { get; } = enumerableType;
+
+        public Task Invoke(object handler, object @event, CancellationToken cancellationToken) =>
+            invoke(handler, @event, cancellationToken);
     }
 }
