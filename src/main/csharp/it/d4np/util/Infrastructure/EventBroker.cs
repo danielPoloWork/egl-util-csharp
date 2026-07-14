@@ -30,10 +30,13 @@ namespace It.D4np.Util.Infrastructure;
 /// enqueued if there is room, otherwise <see cref="PublishAsync{TEvent}"/> throws instead of waiting.
 /// </para>
 /// <para>
-/// <b>Resilience.</b> A handler that throws is isolated: the failure is logged (when a logger is supplied)
-/// and the consumer continues with the next handler and event — one faulty handler never stops delivery.
-/// Handlers are invoked with a non-cancelled token and run to completion; the broker does not force-cancel
-/// in-flight handlers.
+/// <b>Resilience.</b> A handler that throws is isolated: the consumer continues with the next handler and
+/// event — one faulty handler never stops delivery. Every isolated failure is reported through an
+/// <see cref="System.Diagnostics.Tracing.EventSource"/> named <c>It.D4np.Util.EventBroker</c>
+/// unconditionally (so failures are observable via ETW / <c>dotnet-trace</c> / an
+/// <see cref="System.Diagnostics.Tracing.EventListener"/> even when the broker has no logger, #43) and,
+/// additionally, logged when a logger is supplied. Handlers are invoked with a non-cancelled token and run
+/// to completion; the broker does not force-cancel in-flight handlers.
 /// </para>
 /// <para>
 /// <b>Shutdown.</b> The broker stops accepting new events and makes a <i>best-effort</i> drain of the
@@ -43,7 +46,12 @@ namespace It.D4np.Util.Infrastructure;
 /// </remarks>
 public sealed class EventBroker : BackgroundService, IEventBroker
 {
-    private static readonly ConcurrentDictionary<Type, EventDispatch> Dispatchers = new();
+    // Per-broker (not process-static): the cache of closed generic dispatch plans is collected with the
+    // broker and its provider, rather than pinning a closed generic type + compiled delegate per distinct
+    // published event type for the process lifetime. That keeps a plugin / dynamic-assembly host or an
+    // unbounded generic event type (Envelope<TPayload>) from slowly leaking type/delegate metadata; the
+    // per-broker recompute is one-time per event type and negligible (#44).
+    private readonly ConcurrentDictionary<Type, EventDispatch> _dispatchers = new();
 
     private readonly Channel<object> _channel;
     private readonly IServiceScopeFactory _scopeFactory;
@@ -56,7 +64,11 @@ public sealed class EventBroker : BackgroundService, IEventBroker
     /// <summary>Creates a broker that resolves handlers from <paramref name="scopeFactory"/>.</summary>
     /// <param name="scopeFactory">The DI scope factory used to resolve handlers per event.</param>
     /// <param name="capacity">The bounded channel capacity; publishers wait when it is full.</param>
-    /// <param name="logger">An optional logger used to record handler failures.</param>
+    /// <param name="logger">
+    /// An optional logger used to record handler failures. Failures are always also reported through the
+    /// <c>It.D4np.Util.EventBroker</c> <see cref="System.Diagnostics.Tracing.EventSource"/>, so leaving this
+    /// <see langword="null"/> does not make them invisible (#43).
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="scopeFactory"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is not positive.</exception>
     [RequiresDynamicCode(
@@ -142,7 +154,10 @@ public sealed class EventBroker : BackgroundService, IEventBroker
             }
             catch (Exception exception)
             {
-                // Last-resort isolation: nothing a single event does may stop the only consumer.
+                // Last-resort isolation: nothing a single event does may stop the only consumer. Report
+                // through the EventSource unconditionally (observable without a logger, #43) and through
+                // the logger when one was supplied.
+                EventBrokerEventSource.Log.DispatchFailed(@event.GetType().ToString(), exception.ToString());
                 _logger?.LogError(exception, "Failed to dispatch event {EventType}.", @event.GetType());
             }
         }
@@ -150,7 +165,7 @@ public sealed class EventBroker : BackgroundService, IEventBroker
 
     private async Task DispatchAsync(object @event)
     {
-        EventDispatch dispatch = Dispatchers.GetOrAdd(@event.GetType(), EventDispatch.ForEventType);
+        EventDispatch dispatch = _dispatchers.GetOrAdd(@event.GetType(), EventDispatch.ForEventType);
 
         // Dispose the per-event scope asynchronously: a synchronous Dispose throws for a resolved
         // service that implements IAsyncDisposable but not IDisposable (leaking it and falsely logging
@@ -189,6 +204,10 @@ public sealed class EventBroker : BackgroundService, IEventBroker
                     catch (Exception exception)
                     {
                         // Isolate failures: one handler must not stop the consumer or its sibling handlers.
+                        // Report through the EventSource unconditionally (so the failure is observable even
+                        // without a logger, #43) and through the logger when one was supplied.
+                        EventBrokerEventSource.Log.HandlerFailed(
+                            handler.GetType().ToString(), @event.GetType().ToString(), exception.ToString());
                         _logger?.LogError(
                             exception, "Event handler {HandlerType} failed for event {EventType}.", handler.GetType(), @event.GetType());
                     }

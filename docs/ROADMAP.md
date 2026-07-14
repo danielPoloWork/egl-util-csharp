@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-14 — fix: trim/AOT annotations on the reflective entry points (#49)](journal/2026/07/2026-07-14-fix-trim-aot-annotations.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-14 — fix: EventBroker failure visibility (EventSource) + per-broker dispatch cache (#43, #44)](journal/2026/07/2026-07-14-fix-eventbroker-failure-visibility-and-cache-scope.md).
 
 ---
 

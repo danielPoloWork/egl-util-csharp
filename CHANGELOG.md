@@ -12,6 +12,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `EventBroker` failures are now observable without a logger via an `EventSource` (#43). A handler that
+  threw was isolated and logged through `_logger?.LogError(...)`, so a broker constructed with **no** logger
+  (manual construction, or a host with no logging provider) dropped the failure with zero trace — no
+  rethrow, metric, or callback. Every isolated failure (a throwing handler, and the last-resort dispatch
+  guard) is now reported **unconditionally** through an `EventSource` named `It.D4np.Util.EventBroker`
+  (`HandlerFailed` / `DispatchFailed` events), so it surfaces via ETW / `dotnet-trace` / an `EventListener`
+  regardless of logging configuration; when a logger *is* supplied, it is still logged as before. Additive;
+  no public-API change (the source name is the observable contract to subscribe to).
 - `IPasswordHasher` gains rehash detection and span-based plaintext overloads (#35, #41). `NeedsRehash(string)`
   reports when a stored hash is under-strength (older scheme or lower work factor than the current
   configuration) so callers can implement the documented verify-then-conditionally-rehash upgrade path;
@@ -108,6 +116,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `EventBroker`'s per-event dispatch-plan cache is now per-broker instead of process-static (#44). The
+  `ConcurrentDictionary<Type, EventDispatch>` was `static`, so it outlived every broker/provider and pinned
+  a closed generic type + compiled delegate for each distinct **published runtime type** for the whole
+  process lifetime. Under a plugin / dynamic-assembly host or with unbounded generic event types
+  (`Envelope<TPayload>`), that was a slow, uncollectable leak of type/delegate metadata. The cache is now an
+  instance field, collected with the broker and its provider; the per-broker recompute is one-time per event
+  type and negligible. No API or behavior change (finite-event-type apps are unaffected).
 - `CacheService.RemoveAsync` now removes L2 before L1 (#91). It previously cleared L1 first, then awaited
   the L2 delete, so during that round-trip a concurrent same-node `GetOrCreateAsync` could miss the
   just-cleared L1, hit the still-present L2, and **re-promote the removed value into L1** — the removing
