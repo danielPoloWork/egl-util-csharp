@@ -56,7 +56,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with: { dotnet-version: '8.0.x' }
 
       # Only Infrastructure is packable (it bundles Domain + Application); pack it explicitly so the
@@ -114,7 +114,7 @@ jobs:
       contents: read    # only downloads the release assets; never writes to the repo
     steps:
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with: { dotnet-version: '8.0.x' }
 
       # Push the exact artifacts a human reviewed on the release, not a fresh rebuild.
