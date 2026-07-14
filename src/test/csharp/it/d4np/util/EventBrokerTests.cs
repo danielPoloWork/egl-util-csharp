@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.Tracing;
+using System.Reflection;
 
 using It.D4np.Util.Application;
 using It.D4np.Util.Infrastructure;
@@ -554,5 +556,78 @@ public class EventBrokerTests
         Assert.Equal(1, baseType.Count);    // base-type handler now fires (the #71 fix)
         Assert.Equal(1, @interface.Count);  // interface handler now fires
         Assert.Equal(0, sibling.Count);     // a sibling type's handler must not fire
+    }
+
+    // --- #43: handler failures are observable through the EventSource even without a logger ---
+
+    // The public EventSource-name contract consumers subscribe to. Hard-coded (not read from the internal
+    // constant) so a silent rename — which would break every existing listener — also breaks this test.
+    private const string EventBrokerSourceName = "It.D4np.Util.EventBroker";
+
+    [Fact]
+    public async Task A_throwing_handler_is_reported_through_the_EventSource_even_without_a_logger()
+    {
+        // #43: constructed with NO logger, a throwing handler used to be caught and dropped with zero trace.
+        // The broker now reports every isolated failure through the It.D4np.Util.EventBroker EventSource
+        // unconditionally, so it is observable via an EventListener regardless of logging configuration.
+        using var listener = new CollectingEventListener();
+        var services = new ServiceCollection();
+        services.AddSingleton<IEventHandler<Pinged>>(new ThrowingHandler()); // throws on every event
+        await using ServiceProvider provider = services.BuildServiceProvider();
+        using var broker = new EventBroker(provider.GetRequiredService<IServiceScopeFactory>()); // no logger
+
+        await broker.StartAsync(CancellationToken.None);
+        await broker.PublishAsync(new Pinged(1));
+        await broker.StopAsync(CancellationToken.None); // drains: the handler runs, throws, and is reported
+
+        // A HandlerFailed event naming this specific handler was emitted — asserting the handler name (not
+        // just the event name) keeps the test robust against any unrelated broker activity on the source.
+        Assert.Contains(
+            listener.Events,
+            captured => captured.Name == "HandlerFailed" && captured.Payload.Contains(nameof(ThrowingHandler)));
+    }
+
+    // --- #44: the per-event dispatch-plan cache is per-broker, not a process-wide static leak ---
+
+    [Fact]
+    public void The_dispatch_plan_cache_is_instance_scoped_not_process_static()
+    {
+        // #44: a process-static cache pinned a closed generic type + compiled delegate per distinct event
+        // type for the whole process lifetime (a slow, uncollectable leak under dynamic/plugin hosts). The
+        // cache must be a per-broker instance field, so it is collected with the broker and its provider.
+        Assert.DoesNotContain(
+            typeof(EventBroker).GetFields(BindingFlags.NonPublic | BindingFlags.Static),
+            field => field.FieldType.IsGenericType
+                && field.FieldType.GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>));
+        Assert.Contains(
+            typeof(EventBroker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance),
+            field => field.FieldType.IsGenericType
+                && field.FieldType.GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>));
+    }
+
+    // Captures events from the broker's EventSource for assertions. Enabling happens in
+    // OnEventSourceCreated, which the base constructor replays for already-created sources — so it must
+    // match against the compile-time const, NOT an instance field: the base constructor runs before the
+    // derived constructor body, so any instance field would still be null during that replay and an
+    // already-existing source (created by an earlier test) would never be enabled.
+    private sealed class CollectingEventListener : EventListener
+    {
+        private readonly ConcurrentQueue<(string Name, string Payload)> _events = new();
+
+        public IReadOnlyList<(string Name, string Payload)> Events => _events.ToArray();
+
+        protected override void OnEventSourceCreated(EventSource eventSource)
+        {
+            if (eventSource.Name == EventBrokerSourceName)
+            {
+                EnableEvents(eventSource, EventLevel.Error);
+            }
+        }
+
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            string payload = string.Join(" | ", eventData.Payload ?? (IReadOnlyList<object?>)Array.Empty<object?>());
+            _events.Enqueue((eventData.EventName ?? string.Empty, payload));
+        }
     }
 }
