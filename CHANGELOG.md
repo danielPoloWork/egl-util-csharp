@@ -12,6 +12,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `IPasswordHasher` gains rehash detection and span-based plaintext overloads (#35, #41). `NeedsRehash(string)`
+  reports when a stored hash is under-strength (older scheme or lower work factor than the current
+  configuration) so callers can implement the documented verify-then-conditionally-rehash upgrade path;
+  `Hash(ReadOnlySpan<char>)` and `Verify(ReadOnlySpan<char>, string)` let a caller holding the plaintext in
+  a clearable buffer derive without materializing a `string`. All three are **default interface members**
+  (existing implementers and callers are unaffected); `PasswordHasher` overrides them (the span overloads
+  are the primitives, `NeedsRehash` compares against the configured work factor). Additive (ADR-0029).
 - A `DomainEventNotification` factory so the MediatR bridge works for runtime-typed events (#61). The
   advertised Adapter shipped with no way to close `DomainEventNotification<TEvent>` over an event's runtime
   type, so the natural dispatch-callback code (`new DomainEventNotification<IDomainEvent>(e)`) published the

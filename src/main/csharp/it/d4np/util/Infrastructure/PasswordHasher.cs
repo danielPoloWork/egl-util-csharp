@@ -13,11 +13,11 @@ namespace It.D4np.Util.Infrastructure;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Hash format.</b> <see cref="Hash"/> returns a self-describing string
+/// <b>Hash format.</b> <see cref="Hash(string)"/> returns a self-describing string
 /// <c>PBKDF2-SHA256-V1.{iterations}.{saltBase64}.{keyBase64}</c>. Because every parameter needed to
 /// verify is embedded, the iteration count can be raised later without invalidating already-stored
-/// hashes: <see cref="Verify"/> always reads the work factor and salt from the stored value, never
-/// from the current configuration. <see cref="Verify"/> accepts only hashes carrying the V1 scheme's
+/// hashes: <see cref="Verify(string, string)"/> always reads the work factor and salt from the stored value, never
+/// from the current configuration. <see cref="Verify(string, string)"/> accepts only hashes carrying the V1 scheme's
 /// fixed 16-byte salt and 32-byte key; a well-formed but off-spec hash returns <see langword="false"/>.
 /// </para>
 /// <para>
@@ -35,7 +35,7 @@ public sealed class PasswordHasher : IPasswordHasher
     /// <summary>
     /// The maximum accepted iteration count — 100× <see cref="MinimumIterations"/>, far above any
     /// legitimate configuration. Bounding the work factor (both at construction and when read from a
-    /// stored hash during <see cref="Verify"/>) is defense-in-depth: a pathological value cannot pin a
+    /// stored hash during <see cref="Verify(string, string)"/>) is defense-in-depth: a pathological value cannot pin a
     /// CPU on verification.
     /// </summary>
     public const int MaximumIterations = MinimumIterations * 100;
@@ -69,7 +69,14 @@ public sealed class PasswordHasher : IPasswordHasher
     public string Hash(string password)
     {
         ArgumentNullException.ThrowIfNull(password);
+        return Hash(password.AsSpan());
+    }
 
+    /// <inheritdoc />
+    public string Hash(ReadOnlySpan<char> password)
+    {
+        // The ReadOnlySpan overload is the primitive: it derives directly from the span (no intermediate
+        // string), so a caller holding the plaintext in a clearable buffer can bound its lifetime (#41).
         byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
         byte[] key = Rfc2898DeriveBytes.Pbkdf2(password, salt, _iterations, Algorithm, KeySize);
 
@@ -85,6 +92,15 @@ public sealed class PasswordHasher : IPasswordHasher
     public bool Verify(string password, string hash)
     {
         ArgumentNullException.ThrowIfNull(password);
+        ArgumentNullException.ThrowIfNull(hash);
+        return Verify(password.AsSpan(), hash);
+    }
+
+    /// <inheritdoc />
+    public bool Verify(ReadOnlySpan<char> password, string hash)
+    {
+        // The ReadOnlySpan overload is the primitive (derives from the span directly), so a caller can
+        // bound the plaintext's lifetime (#41).
         ArgumentNullException.ThrowIfNull(hash);
 
         string[] parts = hash.Split(Separator);
@@ -125,5 +141,24 @@ public sealed class PasswordHasher : IPasswordHasher
         // so hashes written with a smaller (or larger) iteration count still verify.
         byte[] actualKey = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, Algorithm, expectedKey.Length);
         return CryptographicOperations.FixedTimeEquals(actualKey, expectedKey);
+    }
+
+    /// <inheritdoc />
+    public bool NeedsRehash(string hash)
+    {
+        ArgumentNullException.ThrowIfNull(hash);
+
+        string[] parts = hash.Split(Separator);
+
+        // An unrecognised scheme (or malformed structure/work factor) means the hash is not one this hasher
+        // now produces, and a stored count below the configured work factor is under-strength — both should
+        // be re-hashed on next use. A well-formed V1 hash at or above the current count does not (#35).
+        if (parts.Length != 4 || !string.Equals(parts[0], Scheme, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return !int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out int iterations)
+            || iterations < _iterations;
     }
 }
