@@ -9,9 +9,9 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 
 ## 2. Functional Requirements
 
-- `Entity<TId>` — abstract base with identity-based equality (equal iff same type and `Id`) and a strongly-typed `Id`.
+- `Entity<TId, TEntity>` — abstract base with identity-based equality on the canonical type `TEntity` (equal iff same canonical type and non-default `Id`; transient default-`Id` entities compare by reference, and EF proxies compare correctly — self-referencing generic, ADR-0028) and a strongly-typed `Id`.
 - `ValueObject` — abstract base with structural value equality and matching `GetHashCode`, derived from an explicit `GetEqualityComponents()` sequence.
-- `AggregateRoot<TId>` — extends `Entity<TId>`; accumulates domain events in a read-only `DomainEvents` collection via `RaiseDomainEvent` / `ClearDomainEvents`.
+- `AggregateRoot<TId, TAggregate>` — extends `Entity<TId, TAggregate>`; accumulates domain events in a read-only `DomainEvents` collection via `RaiseDomainEvent` / `ClearDomainEvents`.
 - `IDomainEvent` — marker interface for domain events carrying an occurred-on timestamp sourced from `IDateTimeProvider`.
 - `DomainEventNotification<TEvent>` — adapts an `IDomainEvent` into a MediatR `INotification` so domain events dispatch as application notifications.
 - `Result` — success/failure of an operation without throwing; exposes `IsSuccess`/`IsFailure` and an ordered `Errors` collection (with an `Error` convenience for the first), via `Success()`/`Failure(params Error[])` factories.
@@ -52,7 +52,7 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 
 Clean / Onion architecture: dependencies point inward toward the domain. The package is organised into three layers, separated by namespace under `It.D4np.Util`:
 
-- Domain (`It.D4np.Util.Domain`) — Entity<TId>, ValueObject, AggregateRoot<TId>, IDomainEvent, and the functional Result/Result<T>/Error model. Zero external dependencies.
+- Domain (`It.D4np.Util.Domain`) — Entity<TId, TEntity>, ValueObject, AggregateRoot<TId, TAggregate>, IDomainEvent, and the functional Result/Result<T>/Error model. Zero external dependencies.
 - Application (`It.D4np.Util.Application`) — ISpecification<T>, IRepository<TEntity,TId>, IUnitOfWork, IEventBroker, ICacheService, IDateTimeProvider, DomainEventNotification<TEvent>, IPasswordHasher, ValidationPipelineBehavior, PaginatedList<T>. Depends on Domain plus the MediatR / FluentValidation abstractions.
 - Infrastructure (`It.D4np.Util.Infrastructure`) — SpecificationEvaluator (EF Core), EventBroker (Channels), PasswordHasher (PBKDF2), CacheService (two-level in-memory + distributed), DistributedCacheExtensions (Redis/JSON), DbContextExtensions, DateTimeProvider, ServiceCollectionExtensions. Depends on Application plus concrete tech.
 
@@ -88,7 +88,7 @@ flowchart TB
 
 Consumers import via `using It.D4np.Util;`. The public surface:
 
-- `Entity<TId>`, `AggregateRoot<TId>`, `ValueObject` — domain primitives.
+- `Entity<TId, TEntity>`, `AggregateRoot<TId, TAggregate>`, `ValueObject` — domain primitives.
 - `IDomainEvent`, `DomainEventNotification<TEvent>` — domain-event surface.
 - `Result`, `Result<TValue>`, `Error`, `Result.Combine(...)` — functional error model.
 - `IRepository<TEntity, TId>`, `ISpecification<TEntity>`, `SpecificationEvaluator` — query/persistence.

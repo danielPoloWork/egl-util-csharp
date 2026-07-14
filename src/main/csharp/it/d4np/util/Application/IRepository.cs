@@ -9,7 +9,7 @@ namespace It.D4np.Util.Application;
 /// <typeparam name="TEntity">The aggregate-root type.</typeparam>
 /// <typeparam name="TId">The aggregate's strongly-typed identifier.</typeparam>
 public interface IRepository<TEntity, TId>
-    where TEntity : AggregateRoot<TId>
+    where TEntity : AggregateRoot<TId, TEntity>
     where TId : notnull
 {
     /// <summary>Finds an aggregate by its identity.</summary>

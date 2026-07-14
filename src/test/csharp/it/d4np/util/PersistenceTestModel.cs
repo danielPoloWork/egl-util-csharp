@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace It.D4np.Util.Tests;
 
 /// <summary>A simple related entity used to exercise specification includes.</summary>
-internal sealed class Category : Entity<Guid>
+internal sealed class Category : Entity<Guid, Category>
 {
     public Category(Guid id, string name)
         : base(id) => Name = name;
@@ -19,7 +19,7 @@ internal sealed class Category : Entity<Guid>
 }
 
 /// <summary>An aggregate root used to exercise the persistence patterns against EF Core.</summary>
-internal sealed class Product : AggregateRoot<Guid>
+internal sealed class Product : AggregateRoot<Guid, Product>
 {
     public Product(Guid id, string name, int price, Guid categoryId)
         : base(id)

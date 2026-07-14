@@ -3,13 +3,13 @@ namespace It.D4np.Util.Domain;
 /// <summary>
 /// Non-generic marker for aggregate roots that buffer domain events, so infrastructure can
 /// enumerate and dispatch the events of every tracked aggregate regardless of its identity type.
-/// Implemented by <see cref="AggregateRoot{TId}"/>.
+/// Implemented by <see cref="AggregateRoot{TId, TAggregate}"/>.
 /// </summary>
 /// <remarks>
 /// <b>Threading.</b> An implementation buffers events in unsynchronized state, and an aggregate is
 /// confined to a single unit of work: reading <see cref="DomainEvents"/> or calling
 /// <see cref="ClearDomainEvents"/> concurrently with the domain code raising events on the same
-/// aggregate is a data race. See <see cref="AggregateRoot{TId}"/> for the full confinement contract.
+/// aggregate is a data race. See <see cref="AggregateRoot{TId, TAggregate}"/> for the full confinement contract.
 /// </remarks>
 public interface IHasDomainEvents
 {

@@ -1,6 +1,7 @@
 # ADR-0004: Adopt the DDD tactical building blocks
 
 - **Status:** Accepted
+- **Superseded in part by:** [ADR-0028](0028-canonical-type-entity-equality-and-transient-identity.md) — `Entity`/`AggregateRoot` become self-referencing generics (`Entity<TId, TEntity>`), with canonical-type equality and transient (default-`Id`) reference identity (breaking, 2.0). The DDD building-block decisions otherwise stand.
 - **Date:** 2026-06-30
 - **Deciders:** Maintainer
 - **Related:** ADR-0003, spec §2 (functional requirements 1–5)

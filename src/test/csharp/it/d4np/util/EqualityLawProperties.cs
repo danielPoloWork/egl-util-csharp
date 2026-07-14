@@ -20,7 +20,7 @@ public class EqualityLawProperties
         }
     }
 
-    private sealed class Customer(int id) : Entity<int>(id);
+    private sealed class Customer(int id) : Entity<int, Customer>(id);
 
     [Property]
     public void ValueObject_equality_is_reflexive(int amount, string? currency)
@@ -87,7 +87,16 @@ public class EqualityLawProperties
         var a = new Customer(id);
         var b = new Customer(id);
 
-        Assert.Equal(a, b);
+        if (id == 0)
+        {
+            // A default (transient) Id compares by reference, so two distinct unsaved instances are
+            // unequal — they must not collapse together (#25).
+            Assert.NotEqual(a, b);
+        }
+        else
+        {
+            Assert.Equal(a, b);
+        }
 
         if (id != otherId)
         {

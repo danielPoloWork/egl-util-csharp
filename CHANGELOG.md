@@ -43,6 +43,17 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **BREAKING:** `Entity<TId>` and `AggregateRoot<TId>` become self-referencing generics —
+  `Entity<TId, TEntity>` and `AggregateRoot<TId, TAggregate>` — so equality is based on the **canonical
+  domain type** rather than the runtime type (#25, #26, ADR-0028). This fixes two identity bugs: an EF Core
+  proxy (`CustomerProxy : Customer`) now compares **equal** to a plain instance of the same identity (was
+  unequal — #26), and a **transient** entity with a default `Id` (`0`/`Guid.Empty`) now compares by
+  **reference** so distinct unsaved entities no longer collapse in a `HashSet`/`Dictionary` (was equal —
+  #25). Migration: close the generic over the type itself — `class Order : AggregateRoot<Guid, Order>`,
+  `class Customer : Entity<Guid, Customer>`; `IRepository<TEntity, TId>`'s constraint is now
+  `AggregateRoot<TId, TEntity>`. There is no longer a common non-generic `Entity<TId>` base, so compare
+  entities of different types through `object`/`IEquatable`. A **MAJOR** change (2.0); the Domain layer
+  stays dependency-free (no EF reference, no proxy-name heuristic).
 - CI now fails, rather than silently skips, the Testcontainers Redis integration tests on the
   Docker-capable leg (#100). The tests caught every container-start failure and downgraded to a skip, so a
   regression (a bad image tag, a Testcontainers break) could silently stop the only real-Redis coverage

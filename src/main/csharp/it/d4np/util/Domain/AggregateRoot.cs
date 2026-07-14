@@ -2,7 +2,7 @@ namespace It.D4np.Util.Domain;
 
 /// <summary>
 /// Base class for aggregate roots — the single entry point to a consistency boundary. An
-/// aggregate root is an <see cref="Entity{TId}"/> that buffers the <see cref="IDomainEvent"/>s
+/// aggregate root is an <see cref="Entity{TId, TEntity}"/> that buffers the <see cref="IDomainEvent"/>s
 /// raised during a unit of work until an infrastructure boundary collects, dispatches, and
 /// clears them.
 /// </summary>
@@ -21,8 +21,10 @@ namespace It.D4np.Util.Domain;
 /// aggregate is being dispatched) is not concurrent access and is safe.
 /// </remarks>
 /// <typeparam name="TId">The strongly-typed aggregate identifier; must be non-nullable.</typeparam>
-public abstract class AggregateRoot<TId> : Entity<TId>, IHasDomainEvents
+/// <typeparam name="TAggregate">The canonical aggregate type (the concrete type closes the generic over itself).</typeparam>
+public abstract class AggregateRoot<TId, TAggregate> : Entity<TId, TAggregate>, IHasDomainEvents
     where TId : notnull
+    where TAggregate : AggregateRoot<TId, TAggregate>
 {
     private readonly List<IDomainEvent> _domainEvents = [];
 
