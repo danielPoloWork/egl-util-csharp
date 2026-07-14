@@ -1,6 +1,7 @@
 # ADR-0008: Adopt secure password hashing and a validation pipeline behavior
 
 - **Status:** Accepted
+- **Extended by:** [ADR-0029](0029-passwordhasher-rehash-detection-and-span-plaintext.md) — `IPasswordHasher` gains `NeedsRehash` and `ReadOnlySpan<char>` overloads (additive default interface members). The decisions below otherwise stand.
 - **Date:** 2026-06-30
 - **Deciders:** Maintainer
 - **Related:** ADR-0003, ADR-0004, ADR-0006, ADR-0007, spec §2 (requirements 18–20), §3, §4

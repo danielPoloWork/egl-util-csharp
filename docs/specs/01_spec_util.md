@@ -26,7 +26,7 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 - `IEventBroker` — asynchronous in-memory publish abstraction (`PublishAsync<TEvent>`) that does not block the caller.
 - `EventBroker` — `System.Threading.Channels`-backed implementation with a background consumer: thread-safe, bounded back-pressure, ordered per-channel delivery.
 - `IEventHandler<TEvent>` — consumer contract (`HandleAsync(TEvent, CancellationToken)`) resolved per event type.
-- `IPasswordHasher` — algorithm-agnostic abstraction for secure password hashing and verification (`Hash`, `Verify`).
+- `IPasswordHasher` — algorithm-agnostic abstraction for secure password hashing and verification (`Hash`, `Verify`; plus additive `NeedsRehash` and `ReadOnlySpan<char>` overloads as default interface members, ADR-0029).
 - `PasswordHasher` — PBKDF2 implementation with per-password random salt, configurable high iteration count, and constant-time verification.
 - `ValidationPipelineBehavior<TRequest, TResponse>` — MediatR pipeline behavior running all FluentValidation validators and short-circuiting on failure.
 - `ICacheService` — two-level (in-memory + distributed/Redis) cache abstraction with `GetOrCreateAsync`, TTL, and key-based invalidation.
