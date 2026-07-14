@@ -23,6 +23,15 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
+    <!--
+      Make the advertised analyzer gate real (#77): AnalysisMode=Recommended turns on the recommended
+      Roslyn CA rule set (not just the small default subset), and EnforceCodeStyleInBuild runs the IDExxxx
+      style rules at build (at their .editorconfig severity) so `dotnet build -warnaserror` enforces them.
+      Scoped to the shipped library (non-*Tests projects): test code follows looser, idiomatic conventions
+      (xUnit underscore method names, inline test data) that these rules would flag as noise.
+    -->
+    <AnalysisMode Condition="!$(MSBuildProjectName.EndsWith('Tests'))">Recommended</AnalysisMode>
+    <EnforceCodeStyleInBuild Condition="!$(MSBuildProjectName.EndsWith('Tests'))">true</EnforceCodeStyleInBuild>
     <Deterministic>true</Deterministic>
     <!--
       SourceLink + symbol settings (#36), applied to every project so the bundled Domain and Application

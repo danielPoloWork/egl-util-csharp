@@ -47,3 +47,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0029](0029-passwordhasher-rehash-detection-and-span-plaintext.md) | Add rehash-detection and span-based plaintext to IPasswordHasher | Accepted |
 | [0030](0030-runtime-resolved-single-source-library-version.md) | Resolve the library version at runtime from a single MSBuild source — **breaking (2.0)** | Accepted |
 | [0031](0031-supply-chain-sast-and-sbom.md) | Adopt CodeQL, dependency review, and a CycloneDX SBOM | Accepted |
+| [0032](0032-enforce-the-analyzer-gate.md) | Make the Roslyn analyzer gate real (AnalysisMode + EnforceCodeStyleInBuild) | Accepted |

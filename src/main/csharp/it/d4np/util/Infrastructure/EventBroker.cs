@@ -143,8 +143,9 @@ public sealed class EventBroker : BackgroundService, IEventBroker
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Stop accepting new events on shutdown, but drain what is already queued (the read uses None).
-        await using CancellationTokenRegistration registration =
-            stoppingToken.Register(static state => ((ChannelWriter<object>)state!).TryComplete(), _channel.Writer);
+        await using var registration = stoppingToken
+            .Register(static state => ((ChannelWriter<object>)state!).TryComplete(), _channel.Writer)
+            .ConfigureAwait(false);
 
         await foreach (object @event in _channel.Reader.ReadAllAsync(CancellationToken.None).ConfigureAwait(false))
         {
@@ -170,8 +171,10 @@ public sealed class EventBroker : BackgroundService, IEventBroker
         // Dispose the per-event scope asynchronously: a synchronous Dispose throws for a resolved
         // service that implements IAsyncDisposable but not IDisposable (leaking it and falsely logging
         // the already-succeeded dispatch as failed). AsyncServiceScope still disposes plain
-        // IDisposable services synchronously, so this is strictly safer.
-        await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
+        // IDisposable services synchronously, so this is strictly safer. Disposed in the finally with
+        // ConfigureAwait(false) (the library's context-agnostic discipline, CA2007) since the scope is
+        // used below.
+        AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
 
         // Mark this flow as "inside dispatch" so a handler's re-entrant PublishAsync takes the
         // non-blocking path. AsyncLocal flows into the awaited handler calls; reset afterwards.
@@ -217,6 +220,7 @@ public sealed class EventBroker : BackgroundService, IEventBroker
         finally
         {
             _dispatching.Value = false;
+            await scope.DisposeAsync().ConfigureAwait(false);
         }
     }
 

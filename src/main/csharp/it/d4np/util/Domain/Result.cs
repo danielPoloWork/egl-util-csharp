@@ -113,7 +113,9 @@ public class Result
         return errors.Length == 0 ? Success() : Failure(errors);
     }
 
-    private static IReadOnlyList<Error> Defensive(Error[] errors)
+    // Returns the concrete Error[] (CA1859) — the caller (the Result constructor) re-wraps it in a
+    // ReadOnlyCollection copy, so exposing the array type here does not weaken the read-only Errors view (#85).
+    private static Error[] Defensive(Error[] errors)
     {
         ArgumentNullException.ThrowIfNull(errors);
         if (Array.Exists(errors, static error => error is null))
