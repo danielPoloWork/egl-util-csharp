@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-14 — CI: release gating (full CI) + curated release notes (#37, #73)](2026/07/2026-07-14-ci-release-gating-and-curated-notes.md)
 - [2026-07-14 — Fix: snupkg SourceLink + bundled Domain/Application PDBs (#36, #66)](2026/07/2026-07-14-fix-snupkg-sourcelink-and-bundled-pdbs.md)
 - [2026-07-14 — Fix: runtime-resolved, single-source library version (#48, #86) — breaking (2.0)](2026/07/2026-07-14-fix-runtime-resolved-single-source-version.md)
 - [2026-07-14 — CI: consistency_lint hardening + drop the deep clone (#72, #74, #82, #96)](2026/07/2026-07-14-ci-consistency-lint-hardening.md)
