@@ -15,18 +15,20 @@ contract (the "congruence checks"):
      project's <Version>, and the latest released changelog/release file (if any) agree;
   2. adr-index       — every docs/adr/NNNN-*.md is indexed and every indexed ADR exists,
      with sequential numbering and no gap;
-  3. patterns        — every Adopted catalogue row cites an existing ADR and an existing
-     code location under the source tree;
+  3. patterns        — every Adopted/Planned catalogue row cites an existing ADR; an
+     Implemented row also cites an existing code location under the source tree (a Planned
+     row need not have landed code yet, but any path it does cite must exist);
   4. spec-map        — the ROADMAP Spec Coverage Map has no dangling row;
   5. milestones      — README ↔ ROADMAP milestone-completion state is consistent and no
      checkbox is malformed;
   6. bugs            — every docs/bugs/ record has valid frontmatter, its filename/path
      agrees with its id/discovered date, ids are unique and non-gapped, the index ↔ files
      bijection holds, and a `fixed` record names its `fixed-in`;
-  7. i18n-freshness  — (only when i18n is enabled) each translated page records a content
-     digest of its English source; the check fails if the source's current digest differs
-     (the source changed and the translation was not re-synced). Content-based, so it is
-     stable across the repository's squash-merge.
+  7. i18n-freshness  — (only when i18n is enabled) every manifest row names a known status
+     and its translated file exists; a `translated` row also records a content digest of its
+     English source, and the check fails if the source's current digest differs (the source
+     changed and the translation was not re-synced). Content-based, so it is stable across
+     the repository's squash-merge.
 
 Each check is independent; all run, then the report lists every failure. The checks are
 designed to PASS on a freshly-generated repository (empty catalogues, no releases yet).
@@ -37,7 +39,6 @@ Generated configuration is in the CONFIG block below — EADOS fills it from pro
 import hashlib
 import os
 import re
-import subprocess
 import sys
 
 # ---------------------------------------------------------------------------
@@ -74,16 +75,6 @@ def read(*parts):
 
 def exists(rel):
     return os.path.exists(os.path.join(ROOT, rel))
-
-
-def git(*args):
-    try:
-        out = subprocess.run(
-            ["git", "-C", ROOT, *args], capture_output=True, text=True, check=True
-        )
-        return out.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
 
 
 def semver_tuple(text):
@@ -193,9 +184,14 @@ def check_patterns():
     # Real Adopted rows start with `| <digits> |`. The `| — |` placeholder row is ignored,
     # so a freshly-generated empty catalogue passes.
     rows = re.findall(r"^\|\s*\d+\s*\|.*\|.*$", cat, re.MULTILINE)
-    adopted = [r for r in rows if "Implemented" in r or "Planned" in r]
-    for row in adopted:
-        pattern = row.split("|")[2].strip()
+    for row in rows:
+        # Columns: | # | Pattern | Status | Problem | Code location | ADR/PR | — cells[0] is the
+        # empty pre-pipe field. Select on the Status *cell* (exact), not a substring of the whole row.
+        cells = [c.strip() for c in row.split("|")]
+        pattern = cells[2] if len(cells) > 2 else row.strip()
+        status = cells[3] if len(cells) > 3 else ""
+        if status not in ("Implemented", "Planned"):
+            continue
         adrs = re.findall(r"\((?:\.\./)*adr/(\d{4}-[a-z0-9-]+\.md)\)", row)
         if not adrs:
             fail(name, f"pattern '{pattern}': no ADR link in its row")
@@ -203,8 +199,10 @@ def check_patterns():
             if not exists(os.path.join("docs", "adr", adr)):
                 fail(name, f"pattern '{pattern}': ADR '{adr}' does not exist")
         code = re.findall(r"\((?:\.\./)*(src/[A-Za-z0-9_./-]+)\)", row)
-        if not code:
-            fail(name, f"pattern '{pattern}': no source code location in its row")
+        # 'Planned' means "decided in an ADR, not yet landed" (docs/patterns/README.md), so it may carry
+        # no code location; only 'Implemented' must cite one. Either way, any cited path must exist (#82).
+        if status == "Implemented" and not code:
+            fail(name, f"pattern '{pattern}': Implemented row has no source code location")
         for path in code:
             if not exists(path):
                 fail(name, f"pattern '{pattern}': code location '{path}' does not exist")
@@ -254,16 +252,31 @@ def check_milestones():
         return
     sections = re.split(r"^## Milestone (\d+)", roadmap, flags=re.MULTILINE)
     roadmap_complete = {}
+    roadmap_sections = set()
     for i in range(1, len(sections), 2):
         num = int(sections[i])
+        roadmap_sections.add(num)
         body = sections[i + 1].split("\n## ")[0]
         items = re.findall(r"^- \[([ xX])\]\s", body, re.MULTILINE)
         if items:
             roadmap_complete[num] = all(c.lower() == "x" for c in items)
+    # Bidirectional README <-> ROADMAP congruence (#72). A README milestone must have a ROADMAP
+    # section, and where that section carries checkbox items the two completion states must agree in
+    # BOTH directions (README ✅ vs all boxes checked) — not just README-complete-but-ROADMAP-open. The
+    # ROADMAP may carry milestones the README table omits (e.g. post-1.0 doc work), so this reconciles
+    # over the README's milestones only.
     for num, complete in readme_status.items():
-        if complete and num in roadmap_complete and not roadmap_complete[num]:
-            fail(name, f"README marks Milestone {num} complete, but ROADMAP has "
+        if num not in roadmap_sections:
+            fail(name, f"README lists Milestone {num} but the ROADMAP has no '## Milestone {num}' section")
+            continue
+        if num not in roadmap_complete:
+            continue  # section exists but has no checkbox items — nothing to reconcile
+        if complete and not roadmap_complete[num]:
+            fail(name, f"README marks Milestone {num} complete (✅), but the ROADMAP has "
                        "unchecked item(s) in that milestone")
+        elif roadmap_complete[num] and not complete:
+            fail(name, f"ROADMAP has every Milestone {num} item checked, but the README row "
+                       "for that milestone is not ✅")
     for ln in roadmap.splitlines():
         if re.match(r"^- \[", ln) and not re.match(r"^- \[[ xX]\]\s", ln):
             fail(name, f"malformed ROADMAP checkbox: {ln.strip()[:60]}")
@@ -349,6 +362,9 @@ def check_bugs():
 # ---------------------------------------------------------------------------
 # 7. i18n freshness (only when enabled)
 # ---------------------------------------------------------------------------
+I18N_STATUSES = {"translated", "outdated"}
+
+
 def check_i18n_freshness():
     name = "i18n-freshness"
     if not CONFIG.get("i18n_enabled"):
@@ -362,14 +378,31 @@ def check_i18n_freshness():
     for line in manifest.splitlines():
         if not line.lstrip().startswith("| ["):
             continue
-        if "`translated`" not in line:
-            continue
-        link = re.search(r"\]\(([^)]+)\)", line)
+        # A data row is: | [source](..) | Language | [translation](..) | `digest` | `status` |
+        links = re.findall(r"\]\(([^)]+)\)", line)
         digest = re.search(r"\|\s*`([0-9a-f]{8,64})`\s*\|", line)
-        if link is None or digest is None:
-            fail(name, f"could not parse translated manifest row: {line.strip()}")
+        status = re.search(r"`([A-Za-z]+)`\s*\|\s*$", line)
+        # Fail loudly on a malformed row (a missing link/digest, or a status without backticks)
+        # rather than silently skipping it, which used to disable the check for that row (#74).
+        if len(links) < 2 or digest is None or status is None:
+            fail(name, "could not parse i18n manifest row (needs a source link, a translation link, "
+                       f"a `digest`, and a `status` cell): {line.strip()}")
             continue
-        src = os.path.normpath(os.path.join(i18n_dir, link.group(1)))
+        status_value = status.group(1)
+        if status_value not in I18N_STATUSES:
+            fail(name, f"i18n manifest row has an unrecognised status '{status_value}' "
+                       f"(expected one of {sorted(I18N_STATUSES)}): {line.strip()}")
+            continue
+        # The translated file (column 2's link) must exist for any status — a dangling translation the
+        # manifest still advertises is exactly the defect this check exists to catch (#74).
+        translation = os.path.normpath(os.path.join(i18n_dir, links[1]))
+        trans_rel = os.path.relpath(translation, ROOT).replace(os.sep, "/")
+        if not os.path.exists(translation):
+            fail(name, f"i18n translation '{trans_rel}' referenced by the manifest does not exist")
+        # Freshness applies to `translated` rows; `outdated` is an explicit, already-known-stale marker.
+        if status_value != "translated":
+            continue
+        src = os.path.normpath(os.path.join(i18n_dir, links[0]))
         rel = os.path.relpath(src, ROOT).replace(os.sep, "/")
         if not os.path.exists(src):
             fail(name, f"i18n source '{rel}' referenced by the manifest does not exist")

@@ -64,9 +64,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
+      # Default shallow checkout: the consistency lint reads files only — the i18n check is
+      # content-digest based (squash-merge-safe) and no check touches git history (#96).
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          fetch-depth: 0          # i18n/version checks need full history
       - name: Assert every project commits a packages.lock.json
         shell: bash
         run: |
