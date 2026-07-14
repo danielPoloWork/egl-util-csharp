@@ -58,6 +58,16 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- The `consistency_lint.py` congruence checks are tightened and the consistency CI job no longer deep-clones
+  (#72, #74, #82, #96). `check_milestones` now asserts README ↔ ROADMAP completion in **both** directions
+  (previously only README-complete-but-ROADMAP-open failed) and flags a README milestone with no ROADMAP
+  section (#72). `check_i18n_freshness` now verifies the **translation file exists** and fails on an
+  unrecognised status cell, instead of silently skipping any row without a literal `` `translated` `` (#74).
+  `check_patterns` requires an existing code location only for `Implemented` rows — a `Planned` row (decided
+  in an ADR, not yet landed) may omit it, matching the catalogue's own status vocabulary — while still
+  rejecting a cited path that does not exist (#82). The dead `git()` helper is removed and the consistency
+  job drops `fetch-depth: 0` (no check reads git history; the i18n check is content-digest based) (#96).
+  Repo/CI change only; the shipped package is unchanged.
 - The reflective public entry points now carry trim/AOT annotations (#49). `ServiceCollectionExtensions.AddD4npUtil`
   (assembly scanning via `Assembly.GetTypes`) and the `EventBroker` constructor (runtime-type dispatch via
   `MakeGenericType`/`MakeGenericMethod`) are annotated `[RequiresUnreferencedCode]` and `[RequiresDynamicCode]`,
