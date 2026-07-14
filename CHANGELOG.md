@@ -58,6 +58,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- The release workflow now gates the draft on the full CI suite and publishes the curated notes (#37, #73).
+  A tag push does not trigger `ci.yml`, and `release.yml` previously packed + version-matched but ran **no**
+  tests/coverage/format/analyzers/lint on the released commit — so a tag on a commit with failing tests still
+  drafted a green release (#37). It now `needs:` a `verify` job that reuses `ci.yml` via `workflow_call`
+  (build + test matrix, format/analyzers/coverage, consistency lint on the tagged commit) before packing.
+  And the draft used GitHub's auto-generated notes, ignoring the mandated hand-written
+  `docs/releases/<tag>.md` (#73); it now fails if that file is missing and passes it as the release body
+  (`body_path`), with the auto-generated commit list appended. Repo/CI change only; the shipped package is
+  unchanged.
 - **BREAKING:** `LibraryVersion.Version` is now a runtime-resolved property instead of a `public const`, and
   the version is single-sourced in MSBuild (#48, #86, ADR-0030). It previously duplicated the `1.0.0` literal
   in the packable project's `<Version>` and in `Version.cs` (coupled only by the lint), and as a `const` it
