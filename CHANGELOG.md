@@ -103,6 +103,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `CacheService.RemoveAsync` now removes L2 before L1 (#91). It previously cleared L1 first, then awaited
+  the L2 delete, so during that round-trip a concurrent same-node `GetOrCreateAsync` could miss the
+  just-cleared L1, hit the still-present L2, and **re-promote the removed value into L1** — the removing
+  node then served the invalidated value from L1 until its TTL (indefinitely with `ttl = null`). Removing
+  L2 first and L1 last (standard cache-aside order) shrinks that window from a full L2 round-trip to the
+  gap between the two calls. It also makes an L2-delete fault leave **both** levels populated (rather than
+  clearing L1 and leaving L2 stale). No API change. (Distinct from the unavoidable cross-node staleness of
+  #42.)
 - `PasswordHasher.Verify` now enforces the V1 scheme's fixed **16-byte salt and 32-byte key** (#40). It
   previously checked only that the decoded salt and key were non-empty, so a well-formed but off-spec hash
   (e.g. a 1-byte salt or an 8-byte key) was fed to PBKDF2 rather than rejected — the documented "V1"

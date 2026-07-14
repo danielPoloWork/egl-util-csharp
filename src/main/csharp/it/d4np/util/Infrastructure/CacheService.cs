@@ -42,8 +42,8 @@ namespace It.D4np.Util.Infrastructure;
 /// computation into a business-operation failure — the entry is simply not stored in L2 that time.
 /// Cancellation is <b>not</b> swallowed: an <see cref="OperationCanceledException"/> from the supplied
 /// token propagates. All <b>other</b> L2 faults propagate: a fault <i>reading</i> L2 (before the factory
-/// runs) fails the call, as does an L2 fault in <see cref="RemoveAsync"/> — which has already cleared L1
-/// by then, so L2 may be left stale. See ADR-0024.
+/// runs) fails the call, as does an L2 fault in <see cref="RemoveAsync"/> — which removes L2 before L1
+/// (#91), so a fault there leaves <b>both</b> levels populated. See ADR-0024.
 /// </para>
 /// </remarks>
 public sealed class CacheService : ICacheService
@@ -153,8 +153,14 @@ public sealed class CacheService : ICacheService
     {
         ArgumentException.ThrowIfNullOrEmpty(key);
 
-        _memoryCache.Remove(key);
+        // Delete L2 first, then L1 (standard cache-aside order). Removing L1 last means a concurrent
+        // same-node read hits L1 for the whole L2 round-trip and never re-reads the still-present L2, so it
+        // cannot re-promote the removed value into L1 — shrinking that window from a full L2 round-trip to
+        // the nanoseconds between these two calls (#91). A narrow residual remains (a read that had already
+        // missed L1 could complete its promotion after the L1 removal) — the same lock-free two-level
+        // limitation as the cross-node staleness in #42.
         await _distributedCache.RemoveAsync(key, cancellationToken).ConfigureAwait(false);
+        _memoryCache.Remove(key);
     }
 
     // Each L1 entry is written with an explicit size of one unit. A size-limited IMemoryCache
