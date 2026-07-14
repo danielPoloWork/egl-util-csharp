@@ -116,6 +116,21 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `Error`'s constructor now rejects a null `Code` or `Message` (#76). The `sealed record Error(string Code,
+  string Message)` backed its non-nullable annotations with NRT alone, so a caller outside NRT enforcement
+  (a `#nullable disable` project, an explicit `null!`, or System.Text.Json materializing an `Error` from a
+  payload with a missing field via the parameterized constructor) could build an `Error` whose "non-nullable"
+  `Code`/`Message` was null — the null then surfaced far downstream (e.g. `result.Error.Code.StartsWith(…)`
+  NREs). The record now guards both components on construction (`ArgumentNullException`), keeping the record
+  fully positional (constructor, `Deconstruct`, `with`, equality) and `Error.None`'s empty-string sentinel
+  valid. Additive hardening; no API change.
+- `AddD4npUtil`'s no-argument default scan is now inlining-safe (#90). The default scan target comes from
+  `Assembly.GetCallingAssembly()`; the BCL warns that if the calling method is inlined by the JIT, it returns
+  the caller's caller — silently scanning the wrong assembly and registering **no** handlers/validators, with
+  no error. `AddD4npUtil` now carries `[MethodImpl(MethodImplOptions.NoInlining)]` (the canonical guard) so
+  the frame is never folded away. The XML docs also warn that a wrapper/extension method forwarding to
+  `AddD4npUtil()` makes the **wrapper's** assembly the scan target — such wrappers should pass the intended
+  assemblies explicitly. No API change (metadata + docs).
 - Overriding `IEventBroker` now actually disables the default broker (#92). `AddD4npUtil` advertised the
   core singletons as "overridable — each uses `TryAdd`", but only the `IEventBroker` **mapping** was gated:
   the concrete `EventBroker` and its `IHostedService` were registered unconditionally. So a consumer who

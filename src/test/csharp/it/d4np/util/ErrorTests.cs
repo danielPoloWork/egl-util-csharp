@@ -19,4 +19,24 @@ public class ErrorTests
         Assert.Equal(string.Empty, Error.None.Code);
         Assert.Equal(string.Empty, Error.None.Message);
     }
+
+    [Fact]
+    public void Constructor_rejects_a_null_code()
+    {
+        // #76: back the non-nullable Code annotation with a runtime guard, so a null from outside NRT
+        // enforcement (a #nullable disable caller, an explicit null!, or System.Text.Json materializing
+        // the record from a payload with a missing Code) fails at construction, not far downstream.
+        ArgumentNullException exception =
+            Assert.Throws<ArgumentNullException>(() => new Error(null!, "message"));
+        Assert.Equal("Code", exception.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_rejects_a_null_message()
+    {
+        // #76: same guard for Message.
+        ArgumentNullException exception =
+            Assert.Throws<ArgumentNullException>(() => new Error("Some.Code", null!));
+        Assert.Equal("Message", exception.ParamName);
+    }
 }

@@ -318,4 +318,17 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(brokerCtor.GetCustomAttribute<RequiresDynamicCodeAttribute>());
         Assert.NotNull(brokerCtor.GetCustomAttribute<RequiresUnreferencedCodeAttribute>());
     }
+
+    [Fact]
+    public void The_default_scan_entry_point_is_not_inlinable()
+    {
+        // #90: the no-argument default scan reads Assembly.GetCallingAssembly(). If the JIT inlined
+        // AddD4npUtil into its caller, GetCallingAssembly() would resolve the caller's caller and silently
+        // scan the wrong assembly (registering nothing, with no error). NoInlining is the canonical guard;
+        // it is a pseudo-custom attribute stored in the method's implementation flags, not the custom-
+        // attribute table, so it is checked via MethodImplementationFlags.
+        MethodInfo addD4npUtil =
+            typeof(It.D4np.Util.Infrastructure.ServiceCollectionExtensions).GetMethod("AddD4npUtil")!;
+        Assert.True(addD4npUtil.MethodImplementationFlags.HasFlag(MethodImplAttributes.NoInlining));
+    }
 }
