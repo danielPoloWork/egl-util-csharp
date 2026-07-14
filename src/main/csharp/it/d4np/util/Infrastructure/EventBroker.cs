@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading.Channels;
 
@@ -58,6 +59,11 @@ public sealed class EventBroker : BackgroundService, IEventBroker
     /// <param name="logger">An optional logger used to record handler failures.</param>
     /// <exception cref="ArgumentNullException"><paramref name="scopeFactory"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is not positive.</exception>
+    [RequiresDynamicCode(
+        "The broker dispatches events by runtime type, closing IEventHandler<>/IEnumerable<> over each " +
+        "event type via MakeGenericType and a MakeGenericMethod-built invoker — not compatible with Native AOT.")]
+    [RequiresUnreferencedCode(
+        "The broker reflects over IEventHandler<> handler types to dispatch; those handler types may be trimmed.")]
     public EventBroker(IServiceScopeFactory scopeFactory, int capacity = 1024, ILogger<EventBroker>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(scopeFactory);
