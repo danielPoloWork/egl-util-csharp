@@ -58,6 +58,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- CI hardening: `actions/setup-dotnet` is pinned to a commit SHA, and the `quality` job now has a timeout
+  (#84, #75). `setup-dotnet` was the only action referenced by a mutable tag (`@v5`) while every other action
+  is SHA-pinned; a moved/compromised `v5` tag would run arbitrary code in CI — including `release.yml`, whose
+  token has `contents: write`. All four call sites (two in `ci.yml`, two in `release.yml`) are now pinned to
+  `26b0ec14…` (`# v5.4.0`), which Dependabot's github-actions group maintains (#84). The `quality` job
+  (format + analyzers + coverage) had no `timeout-minutes`, so a hung `dotnet test`/restore could hold a
+  runner for GitHub's 6-hour default; it now uses `timeout-minutes: 30`, matching the build job (#75).
+  Repo/CI change only; the shipped package is unchanged.
 - The release workflow now gates the draft on the full CI suite and publishes the curated notes (#37, #73).
   A tag push does not trigger `ci.yml`, and `release.yml` previously packed + version-matched but ran **no**
   tests/coverage/format/analyzers/lint on the released commit — so a tag on a commit with failing tests still
