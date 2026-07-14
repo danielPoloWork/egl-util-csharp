@@ -17,7 +17,8 @@ namespace It.D4np.Util.Infrastructure;
 /// <c>PBKDF2-SHA256-V1.{iterations}.{saltBase64}.{keyBase64}</c>. Because every parameter needed to
 /// verify is embedded, the iteration count can be raised later without invalidating already-stored
 /// hashes: <see cref="Verify"/> always reads the work factor and salt from the stored value, never
-/// from the current configuration.
+/// from the current configuration. <see cref="Verify"/> accepts only hashes carrying the V1 scheme's
+/// fixed 16-byte salt and 32-byte key; a well-formed but off-spec hash returns <see langword="false"/>.
 /// </para>
 /// <para>
 /// <b>Constant time.</b> The derived-key comparison uses
@@ -112,7 +113,10 @@ public sealed class PasswordHasher : IPasswordHasher
             return false;
         }
 
-        if (salt.Length == 0 || expectedKey.Length == 0)
+        // Enforce the V1 scheme's fixed parameters: only a hash produced under the documented 16-byte salt
+        // and 32-byte key validates. A well-formed but off-spec hash (e.g. a 1-byte salt, an 8-byte key)
+        // is rejected rather than fed to PBKDF2 (#40).
+        if (salt.Length != SaltSize || expectedKey.Length != KeySize)
         {
             return false;
         }
