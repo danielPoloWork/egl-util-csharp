@@ -65,6 +65,18 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- The Roslyn analyzer gate is now real for the shipped library (#77, ADR-0032). It advertised
+  "analyzers … (warnings as errors) clean" but ran only the default CA subset with all `.editorconfig`
+  severities at `suggestion` and no `EnforceCodeStyleInBuild`, so `-warnaserror` promoted almost nothing.
+  `Directory.Build.props` now sets `AnalysisMode=Recommended` + `EnforceCodeStyleInBuild=true` for the
+  non-test projects, the naming rules are raised to `warning`, and `CA2007` is enforced on `src/main`. Two
+  latent findings are fixed (both internal, behavior-preserving): `Result.Defensive` returns the concrete
+  `Error[]` (CA1859), and both `EventBroker` `await using` sites dispose with `ConfigureAwait(false)`
+  (CA2007). Three rules are deliberately opted out with an inline rationale — `CA1716`/`CA1711` (the frozen,
+  idiomatic `Error` / `IEventHandler<TEvent>` names) and `CA1848` (LoggerMessage delegates, a hot-path
+  optimization not worth it for rare error-path logging). Test projects keep the default analysis (their
+  xUnit conventions would flood the recommended set). Build/quality change only; no public API or runtime
+  behavior change.
 - The single-package bundling invariant is now enforced, and CI packs on every PR (#63, #64). The package
   bundles the Domain/Application assemblies as `PrivateAssets=all` project references, so their
   `PackageReference`s do not flow into the nuspec and must be mirrored — at an identical version — in the
