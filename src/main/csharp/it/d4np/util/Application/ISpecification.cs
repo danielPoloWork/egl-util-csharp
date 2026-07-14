@@ -26,10 +26,20 @@ public interface ISpecification<TEntity>
     /// </summary>
     IReadOnlyList<string> IncludeStrings { get; }
 
-    /// <summary>The ascending sort key, or <see langword="null"/> if not sorted ascending.</summary>
+    /// <summary>
+    /// The ascending sort key, or <see langword="null"/> if not sorted ascending. The primary ordering is a
+    /// single key: <see cref="OrderBy"/> and <see cref="OrderByDescending"/> are <b>mutually exclusive</b> —
+    /// at most one may be non-<see langword="null"/>. The evaluator rejects a specification that sets both
+    /// with an <see cref="System.InvalidOperationException"/>. (The <c>Specification</c> base class enforces
+    /// this automatically; a direct implementation must uphold it.) Use <see cref="ThenBys"/> for secondary
+    /// keys.
+    /// </summary>
     Expression<Func<TEntity, object>>? OrderBy { get; }
 
-    /// <summary>The descending sort key, or <see langword="null"/> if not sorted descending.</summary>
+    /// <summary>
+    /// The descending sort key, or <see langword="null"/> if not sorted descending. Mutually exclusive with
+    /// <see cref="OrderBy"/> — see there.
+    /// </summary>
     Expression<Func<TEntity, object>>? OrderByDescending { get; }
 
     /// <summary>

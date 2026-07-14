@@ -116,6 +116,16 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `SpecificationEvaluator` now rejects a specification that defines **both** `OrderBy` and
+  `OrderByDescending` (#88). The primary ordering is a single ascending *or* descending key; the
+  `Specification` base class enforces this (each `ApplyOrderBy*` resets the other), but a direct
+  `ISpecification<TEntity>` implementation (a supported, assembly-scanned extension point) could set both.
+  The evaluator applied `OrderBy` and **silently dropped** `OrderByDescending`, producing wrongly-ordered —
+  and, when paged, wrongly-sliced — results with no diagnostic, even though it already threw for the
+  analogous paged-but-unordered state. It now throws `InvalidOperationException` for the ambiguous both-set
+  state too, and the exclusivity is documented on `ISpecification.OrderBy`/`OrderByDescending`. **Behavior
+  change:** a direct implementation that set both (already producing wrong results) now fails loudly; specs
+  built via the `Specification` base class cannot reach this state and are unaffected.
 - `Error`'s constructor now rejects a null `Code` or `Message` (#76). The `sealed record Error(string Code,
   string Message)` backed its non-nullable annotations with NRT alone, so a caller outside NRT enforcement
   (a `#nullable disable` project, an explicit `null!`, or System.Text.Json materializing an `Error` from a

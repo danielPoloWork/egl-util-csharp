@@ -17,9 +17,12 @@ public static class SpecificationEvaluator
     /// <returns>The composed queryable, ready to enumerate or count.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="source"/> or <paramref name="specification"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">
-    /// <paramref name="specification"/> enables paging (<c>IsPagingEnabled</c>) but defines no primary
-    /// ordering (<c>OrderBy</c> / <c>OrderByDescending</c>): paging an unordered query returns rows in an
-    /// undefined order across pages on relational providers, so it is rejected rather than run.
+    /// <paramref name="specification"/> is in an invalid ordering state: it defines <em>both</em>
+    /// <c>OrderBy</c> and <c>OrderByDescending</c> (the primary ordering is a single ascending <em>or</em>
+    /// descending key — see <see cref="ISpecification{TEntity}.OrderBy"/>), or it enables paging
+    /// (<c>IsPagingEnabled</c>) with no primary ordering at all. Both are rejected rather than run: the first
+    /// would silently drop one ordering, the second returns rows in an undefined order across pages on
+    /// relational providers.
     /// </exception>
     public static IQueryable<TEntity> GetQuery<TEntity>(IQueryable<TEntity> source, ISpecification<TEntity> specification)
         where TEntity : class
@@ -36,6 +39,19 @@ public static class SpecificationEvaluator
 
         query = specification.Includes.Aggregate(query, (current, include) => current.Include(include));
         query = specification.IncludeStrings.Aggregate(query, (current, include) => current.Include(include));
+
+        // The primary ordering is a single ascending OR descending key; the two are mutually exclusive. The
+        // Specification base class enforces this (ApplyOrderBy/ApplyOrderByDescending reset each other), but
+        // a direct ISpecification implementation could set both. Rather than silently apply OrderBy and drop
+        // OrderByDescending — yielding wrongly-ordered and, when paged, wrongly-sliced results — reject the
+        // ambiguous state, mirroring the paged-but-unordered guard below (#88).
+        if (specification.OrderBy is not null && specification.OrderByDescending is not null)
+        {
+            throw new InvalidOperationException(
+                "A specification must not define both OrderBy and OrderByDescending; the primary ordering is " +
+                "a single ascending or descending key. Set exactly one (use ThenBy/ThenByDescending for " +
+                "secondary keys).");
+        }
 
         IOrderedQueryable<TEntity>? ordered = specification.OrderBy is not null
             ? query.OrderBy(specification.OrderBy)

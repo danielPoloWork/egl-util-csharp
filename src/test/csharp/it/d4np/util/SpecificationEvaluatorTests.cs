@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 using It.D4np.Util.Application;
 using It.D4np.Util.Infrastructure;
 
@@ -39,6 +41,21 @@ public class SpecificationEvaluatorTests
     private sealed class UnorderedPaged : Specification<Product>
     {
         public UnorderedPaged() => ApplyPaging(skip: 0, take: 2); // paging with no ordering
+    }
+
+    // A direct ISpecification implementation — not via the Specification base, which resets one ordering
+    // when the other is set — that supplies BOTH a primary ascending and descending key: an ambiguous,
+    // invalid state the evaluator must reject rather than silently honor one and drop the other (#88).
+    private sealed class BothOrderingsSpecification : ISpecification<Product>
+    {
+        public Expression<Func<Product, bool>>? Criteria => null;
+        public IReadOnlyList<Expression<Func<Product, object>>> Includes => [];
+        public IReadOnlyList<string> IncludeStrings => [];
+        public Expression<Func<Product, object>>? OrderBy => product => product.Price;
+        public Expression<Func<Product, object>>? OrderByDescending => product => product.Name;
+        public int Skip => 0;
+        public int Take => 0;
+        public bool IsPagingEnabled => false;
     }
 
     private sealed class ByPriceThenName : Specification<Product>
@@ -170,6 +187,18 @@ public class SpecificationEvaluatorTests
 
         Assert.Throws<InvalidOperationException>(
             () => SpecificationEvaluator.GetQuery(catalog.Context.Products, new UnorderedPaged()));
+    }
+
+    [Fact]
+    public void Supplying_both_orderings_is_rejected()
+    {
+        // #88: OrderBy and OrderByDescending are mutually exclusive. The evaluator used to apply OrderBy and
+        // silently drop OrderByDescending; a direct ISpecification setting both now throws, mirroring the
+        // paged-but-unordered guard, so the ambiguous state fails loudly instead of mis-ordering results.
+        using var catalog = Catalog.Create(useSqlite: false);
+
+        Assert.Throws<InvalidOperationException>(
+            () => SpecificationEvaluator.GetQuery(catalog.Context.Products, new BothOrderingsSpecification()));
     }
 
     [Theory]
