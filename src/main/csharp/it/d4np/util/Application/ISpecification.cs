@@ -65,4 +65,75 @@ public interface ISpecification<TEntity>
     /// paging an unordered query is non-deterministic across pages on relational providers.
     /// </summary>
     bool IsPagingEnabled { get; }
+
+    // --- Predicate composition (#68). These default members combine only the filter Criteria; the result
+    // carries no includes, ordering, or paging. A null Criteria means "match all". Predicates are merged
+    // over a single parameter (not Expression.Invoke), so the composed Criteria stays EF Core-translatable. ---
+
+    /// <summary>
+    /// Returns a specification whose <see cref="Criteria"/> matches entities satisfying <b>both</b> this
+    /// specification's criteria and <paramref name="other"/>'s (logical AND). A <see langword="null"/>
+    /// <see cref="Criteria"/> is the identity ("match all"), so <c>x.And(y)</c> with one side unfiltered
+    /// yields the other side's criteria.
+    /// </summary>
+    /// <param name="other">The specification to AND with; must not be <see langword="null"/>.</param>
+    /// <returns>A new predicate-only specification for the combined criteria.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="other"/> is <see langword="null"/>.</exception>
+    ISpecification<TEntity> And(ISpecification<TEntity> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        if (Criteria is null)
+        {
+            return other.Criteria is null
+                ? new CriteriaSpecification<TEntity>()
+                : new CriteriaSpecification<TEntity>(other.Criteria);
+        }
+
+        return other.Criteria is null
+            ? new CriteriaSpecification<TEntity>(Criteria)
+            : new CriteriaSpecification<TEntity>(SpecificationCriteria.AndAlso(Criteria, other.Criteria));
+    }
+
+    /// <summary>
+    /// Returns a specification whose <see cref="Criteria"/> matches entities satisfying <b>either</b> this
+    /// specification's criteria or <paramref name="other"/>'s (logical OR). Because a <see langword="null"/>
+    /// <see cref="Criteria"/> means "match all", OR-ing with an unfiltered specification yields an unfiltered
+    /// (match-all) result.
+    /// </summary>
+    /// <param name="other">The specification to OR with; must not be <see langword="null"/>.</param>
+    /// <returns>A new predicate-only specification for the combined criteria.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="other"/> is <see langword="null"/>.</exception>
+    ISpecification<TEntity> Or(ISpecification<TEntity> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return Criteria is null || other.Criteria is null
+            ? new CriteriaSpecification<TEntity>()
+            : new CriteriaSpecification<TEntity>(SpecificationCriteria.OrElse(Criteria, other.Criteria));
+    }
+
+    /// <summary>
+    /// Returns a specification whose <see cref="Criteria"/> matches entities <b>not</b> satisfying this
+    /// specification's criteria (logical NOT). Negating a <see langword="null"/> <see cref="Criteria"/>
+    /// ("match all") yields a match-nothing specification.
+    /// </summary>
+    /// <returns>A new predicate-only specification for the negated criteria.</returns>
+    ISpecification<TEntity> Not() =>
+        Criteria is null
+            ? new CriteriaSpecification<TEntity>(_ => false)
+            : new CriteriaSpecification<TEntity>(SpecificationCriteria.Not(Criteria));
+
+    /// <summary>
+    /// Evaluates this specification's <see cref="Criteria"/> against <paramref name="entity"/> <b>in memory</b>
+    /// (a <see langword="null"/> <see cref="Criteria"/> matches everything). Independent of the data layer,
+    /// so it is useful for validation or unit tests. <b>Note:</b> the default implementation compiles the
+    /// criteria on each call — for a hot loop, compile and cache the delegate (or override this).
+    /// </summary>
+    /// <param name="entity">The candidate entity; must not be <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if the entity satisfies the criteria (or there is none).</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="entity"/> is <see langword="null"/>.</exception>
+    bool IsSatisfiedBy(TEntity entity)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        return Criteria is null || Criteria.Compile()(entity);
+    }
 }

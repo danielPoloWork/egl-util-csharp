@@ -12,6 +12,16 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `ISpecification<TEntity>` gains predicate composition: `And`/`Or`/`Not` combinators + `IsSatisfiedBy`
+  (#68, ADR-0033). The pattern advertised composability but had none — `Criteria` was a single
+  constructor-set predicate. `And`/`Or`/`Not` now return a new specification whose `Criteria` is the
+  combined predicate, merged over a **single parameter** via a rebinding visitor (not `Expression.Invoke`)
+  so the composed tree stays EF Core-translatable; a `null` `Criteria` ("match all") acts as the algebraic
+  identity. `IsSatisfiedBy(entity)` evaluates the criteria in memory. Combinators operate on the filter
+  predicate only (the result carries no includes/ordering/paging). All four are **default interface
+  members**, so existing implementers are unaffected (additive; accrues toward the next MINOR). Covered by
+  in-memory truth tables, null-criteria identities, EF-translatable execution on InMemory + SQLite, and a
+  no-`Invoke` structural guard.
 - Supply-chain assurance in CI/release: CodeQL, dependency review, and a CycloneDX SBOM (#47, ADR-0031).
   A new `codeql.yml` runs CodeQL SAST over the C# source (buildless) on push-to-main, PRs, and weekly; a new
   `dependency-review.yml` fails a PR that introduces a known-vulnerable (or disallowed-license) dependency;

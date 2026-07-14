@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-14 — build: make the Roslyn analyzer gate real (#77)](journal/2026/07/2026-07-14-build-enforce-analyzer-gate.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-14 — feat: Specification And/Or/Not combinators + IsSatisfiedBy (#68)](journal/2026/07/2026-07-14-feat-specification-predicate-combinators.md).
 
 ---
 
