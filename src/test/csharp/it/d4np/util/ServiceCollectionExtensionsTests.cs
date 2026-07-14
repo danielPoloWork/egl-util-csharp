@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -268,5 +269,21 @@ public class ServiceCollectionExtensionsTests
         Assert.Throws<ArgumentNullException>(
             () => It.D4np.Util.Infrastructure.ServiceCollectionExtensions.AddD4npUtil(null!));
         Assert.Throws<ArgumentNullException>(() => services.AddD4npUtil((Assembly[])null!));
+    }
+
+    [Fact]
+    public void The_reflective_entry_points_are_annotated_trim_and_AOT_unsafe()
+    {
+        // #49: the reflective public entry points must carry the trim/AOT annotations so a consumer's
+        // trimming or Native-AOT build surfaces the incompatibility at the call site, rather than failing
+        // silently at runtime.
+        MethodInfo addD4npUtil =
+            typeof(It.D4np.Util.Infrastructure.ServiceCollectionExtensions).GetMethod("AddD4npUtil")!;
+        Assert.NotNull(addD4npUtil.GetCustomAttribute<RequiresDynamicCodeAttribute>());
+        Assert.NotNull(addD4npUtil.GetCustomAttribute<RequiresUnreferencedCodeAttribute>());
+
+        ConstructorInfo brokerCtor = typeof(EventBroker).GetConstructors().Single();
+        Assert.NotNull(brokerCtor.GetCustomAttribute<RequiresDynamicCodeAttribute>());
+        Assert.NotNull(brokerCtor.GetCustomAttribute<RequiresUnreferencedCodeAttribute>());
     }
 }

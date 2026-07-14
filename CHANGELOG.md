@@ -50,6 +50,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- The reflective public entry points now carry trim/AOT annotations (#49). `ServiceCollectionExtensions.AddD4npUtil`
+  (assembly scanning via `Assembly.GetTypes`) and the `EventBroker` constructor (runtime-type dispatch via
+  `MakeGenericType`/`MakeGenericMethod`) are annotated `[RequiresUnreferencedCode]` and `[RequiresDynamicCode]`,
+  so a consumer building a trimmed or Native-AOT app now gets a warning at the call site instead of a silent
+  runtime failure. No runtime-behavior change (metadata only).
 - **BREAKING:** `Entity<TId>` and `AggregateRoot<TId>` become self-referencing generics —
   `Entity<TId, TEntity>` and `AggregateRoot<TId, TAggregate>` — so equality is based on the **canonical
   domain type** rather than the runtime type (#25, #26, ADR-0028). This fixes two identity bugs: an EF Core

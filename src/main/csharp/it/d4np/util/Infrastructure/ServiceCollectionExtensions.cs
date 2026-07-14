@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using FluentValidation;
@@ -54,6 +55,12 @@ public static class ServiceCollectionExtensions
     /// <exception cref="ArgumentNullException">
     /// <paramref name="services"/> or <paramref name="assemblies"/> is <see langword="null"/>.
     /// </exception>
+    [RequiresDynamicCode(
+        "Registers the EventBroker, whose runtime-type dispatch closes generic handler types via " +
+        "MakeGenericType/MakeGenericMethod — not compatible with Native AOT.")]
+    [RequiresUnreferencedCode(
+        "Assembly-scans for IEventHandler<> and IValidator<> implementations via Assembly.GetTypes; the " +
+        "discovered handler and validator types may be trimmed.")]
     public static IServiceCollection AddD4npUtil(this IServiceCollection services, params Assembly[] assemblies)
     {
         ArgumentNullException.ThrowIfNull(services);
