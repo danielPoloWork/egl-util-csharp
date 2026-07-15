@@ -11,7 +11,7 @@ public class LibraryVersionTests
     [Fact]
     public void Version_is_the_current_release()
     {
-        Assert.Equal("1.0.0", LibraryVersion.Version);
+        Assert.Equal("2.0.0", LibraryVersion.Version);
     }
 
     [Fact]

@@ -9,7 +9,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/danielPoloWork/egl-util-csharp/ci.yml?branch=main&logo=github&label=CI)](https://github.com/danielPoloWork/egl-util-csharp/actions/workflows/ci.yml)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../../../LICENSE)
-![Status](https://img.shields.io/badge/Status-v1.0.0-brightgreen)
+![Status](https://img.shields.io/badge/Status-v2.0.0-brightgreen)
 
 egl-util-csharp 是一个使用 **C# 12 / .NET 8** 编写的类库，其构建与治理均遵循企业级质量标准：完整的 CI 矩阵（Linux/Windows/macOS）、以“可空即错误”为准的静态分析、真实 Redis 集成测试、有据可查的设计决策（ADR），以及遵循 SemVer 的版本发布。
 

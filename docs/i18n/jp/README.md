@@ -9,7 +9,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/danielPoloWork/egl-util-csharp/ci.yml?branch=main&logo=github&label=CI)](https://github.com/danielPoloWork/egl-util-csharp/actions/workflows/ci.yml)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../../../LICENSE)
-![Status](https://img.shields.io/badge/Status-v1.0.0-brightgreen)
+![Status](https://img.shields.io/badge/Status-v2.0.0-brightgreen)
 
 egl-util-csharp は **C# 12 / .NET 8** で書かれたライブラリで、エンタープライズ品質水準に沿って構築・管理されています。完全な CI マトリックス（Linux/Windows/macOS）、null 許容をエラーとして扱う静的解析、実際の Redis を用いた統合テスト、文書化された設計判断（ADR）、そして SemVer に基づくリリースを備えています。
 

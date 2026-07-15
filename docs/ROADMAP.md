@@ -4,8 +4,8 @@ The project's plan as a numbered, checkbox-driven list. When an item completes i
 flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the bottom of
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
-- **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-15 — feat: opt-in per-key cache-stampede coalescing (#50)](journal/2026/07/2026-07-15-feat-cache-stampede-coalescing.md).
+- **Versioning:** **v1.0.0 released**; **v2.0.0 prepared** (release PR drafted — the maintainer tags/publishes) rolling up the post-1.0 breaking changes. The public API follows SemVer (ADR-0010, ADR-0030).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-15 — release: prepare v2.0.0](journal/2026/07/2026-07-15-release-v2.0.0.md).
 
 ---
 

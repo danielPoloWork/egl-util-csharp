@@ -7,7 +7,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/danielPoloWork/egl-util-csharp/ci.yml?branch=main&logo=github&label=CI)](https://github.com/danielPoloWork/egl-util-csharp/actions/workflows/ci.yml)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Status](https://img.shields.io/badge/Status-v1.0.0-brightgreen)
+![Status](https://img.shields.io/badge/Status-v2.0.0-brightgreen)
 
 egl-util-csharp is a library written in **C# 12 / .NET 8**, built and governed to an enterprise
 quality bar: a full CI matrix (Linux/Windows/macOS), static analysis with nullable-as-errors,

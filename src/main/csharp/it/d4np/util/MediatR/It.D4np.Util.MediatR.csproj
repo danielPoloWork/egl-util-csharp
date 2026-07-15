@@ -46,6 +46,8 @@
     <PackageTags>ddd;cqrs;mediatr;fluentvalidation;validation;domain-events;dotnet</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- Package validation (#64); baseline deferred to 2.0.0 like the core package (see its csproj). -->
+    <EnablePackageValidation>true</EnablePackageValidation>
   </PropertyGroup>
 
   <ItemGroup>
