@@ -30,8 +30,12 @@ namespace It.D4np.Util.Infrastructure;
 /// enqueued if there is room, otherwise <see cref="PublishAsync{TEvent}"/> throws instead of waiting.
 /// </para>
 /// <para>
-/// <b>Resilience.</b> A handler that throws is isolated: the consumer continues with the next handler and
-/// event — one faulty handler never stops delivery. Every isolated failure is reported through an
+/// <b>Resilience.</b> A handler that throws is isolated — whether it fails during <b>construction</b> (its
+/// constructor or an injected dependency throws) or during execution — so one faulty handler never stops
+/// delivery to its sibling handlers or the next event (#89). Construction-failure isolation covers handlers
+/// discovered by <c>AddD4npUtil</c>'s scan: MS.DI materializes <c>IEnumerable&lt;IEventHandler&lt;T&gt;&gt;</c>
+/// eagerly, so when one handler's constructor aborts that resolution the broker falls back to constructing
+/// each scanned handler for the event individually. Every isolated failure is reported through an
 /// <see cref="System.Diagnostics.Tracing.EventSource"/> named <c>It.D4np.Util.EventBroker</c>
 /// unconditionally (so failures are observable via ETW / <c>dotnet-trace</c> / an
 /// <see cref="System.Diagnostics.Tracing.EventListener"/> even when the broker has no logger, #43) and,
@@ -176,6 +180,10 @@ public sealed class EventBroker : BackgroundService, IEventBroker
         // used below.
         AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
 
+        // The scanned handler types, used only for the per-handler construction fallback below. Null when the
+        // broker was built outside AddD4npUtil (the fallback then cannot salvage siblings — see #89).
+        EventHandlerRegistry? registry = scope.ServiceProvider.GetService<EventHandlerRegistry>();
+
         // Mark this flow as "inside dispatch" so a handler's re-entrant PublishAsync takes the
         // non-blocking path. AsyncLocal flows into the awaited handler calls; reset afterwards.
         _dispatching.Value = true;
@@ -187,32 +195,32 @@ public sealed class EventBroker : BackgroundService, IEventBroker
             // explicitly (#71).
             foreach (HandlerGroup group in dispatch.HandlerGroups)
             {
-                if (scope.ServiceProvider.GetService(group.EnumerableType) is not IEnumerable handlers)
+                IEnumerable? handlers;
+                try
+                {
+                    handlers = scope.ServiceProvider.GetService(group.EnumerableType) as IEnumerable;
+                }
+                catch (Exception exception)
+                {
+                    // A handler's construction (its constructor or an injected dependency) threw. MS.DI
+                    // materializes IEnumerable<IEventHandler<T>> eagerly, so this aborts the WHOLE group's
+                    // resolution — without isolation the event would be dropped for every handler of this
+                    // type, healthy ones included (#89). Fall back to constructing each scanned handler
+                    // individually so the failure is isolated and the siblings still run.
+                    await DispatchGroupIndividuallyAsync(scope, group, @event, registry, exception).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (handlers is null)
                 {
                     continue;
                 }
 
                 foreach (object? handler in handlers)
                 {
-                    if (handler is null)
+                    if (handler is not null)
                     {
-                        continue;
-                    }
-
-                    try
-                    {
-                        // Handlers run to completion with a non-cancelled token; the broker never force-cancels them.
-                        await group.Invoke(handler, @event, CancellationToken.None).ConfigureAwait(false);
-                    }
-                    catch (Exception exception)
-                    {
-                        // Isolate failures: one handler must not stop the consumer or its sibling handlers.
-                        // Report through the EventSource unconditionally (so the failure is observable even
-                        // without a logger, #43) and through the logger when one was supplied.
-                        EventBrokerEventSource.Log.HandlerFailed(
-                            handler.GetType().ToString(), @event.GetType().ToString(), exception.ToString());
-                        _logger?.LogError(
-                            exception, "Event handler {HandlerType} failed for event {EventType}.", handler.GetType(), @event.GetType());
+                        await InvokeHandlerIsolatedAsync(group, handler, @event).ConfigureAwait(false);
                     }
                 }
             }
@@ -221,6 +229,71 @@ public sealed class EventBroker : BackgroundService, IEventBroker
         {
             _dispatching.Value = false;
             await scope.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    // Invokes one already-constructed handler, isolating an execution failure: one faulty handler must not
+    // stop the consumer or its siblings. Reported through the EventSource unconditionally (observable without
+    // a logger, #43) and through the logger when one was supplied.
+    private async Task InvokeHandlerIsolatedAsync(HandlerGroup group, object handler, object @event)
+    {
+        try
+        {
+            // Handlers run to completion with a non-cancelled token; the broker never force-cancels them.
+            await group.Invoke(handler, @event, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            EventBrokerEventSource.Log.HandlerFailed(
+                handler.GetType().ToString(), @event.GetType().ToString(), exception.ToString());
+            _logger?.LogError(
+                exception, "Event handler {HandlerType} failed for event {EventType}.", handler.GetType(), @event.GetType());
+        }
+    }
+
+    // Fallback when the eager IEnumerable<IEventHandler<T>> resolution threw on some handler's construction:
+    // build each scanned handler for this group one at a time so a single faulty constructor is isolated and
+    // its healthy siblings still receive the event (#89). ActivatorUtilities constructs a handler without
+    // re-resolving (and re-throwing for) the whole set, resolving its dependencies from the scope; scanned
+    // handlers are transient, for which this matches their DI lifetime. Handlers registered outside
+    // AddD4npUtil's scan are not in the registry, so — as before the fix — they are not recovered from this
+    // failure (but the healthy scanned ones now are). A healthy handler already constructed during the failed
+    // eager attempt is constructed once more here; handler constructors should be side-effect-free.
+    private async Task DispatchGroupIndividuallyAsync(
+        AsyncServiceScope scope, HandlerGroup group, object @event, EventHandlerRegistry? registry, Exception resolutionFailure)
+    {
+        IReadOnlyList<Type> implementationTypes = registry?.ImplementationsFor(group.HandlerInterfaceType) ?? [];
+        if (implementationTypes.Count == 0)
+        {
+            // Nothing to salvage (no scanned handlers for this type, or the broker was built outside
+            // AddD4npUtil). Report the resolution failure so it is never silently swallowed.
+            EventBrokerEventSource.Log.HandlerFailed(
+                group.HandlerInterfaceType.ToString(), @event.GetType().ToString(), resolutionFailure.ToString());
+            _logger?.LogError(
+                resolutionFailure, "Resolving handlers of type {HandlerType} for event {EventType} failed.",
+                group.HandlerInterfaceType, @event.GetType());
+            return;
+        }
+
+        foreach (Type implementationType in implementationTypes)
+        {
+            object handler;
+            try
+            {
+                handler = ActivatorUtilities.CreateInstance(scope.ServiceProvider, implementationType);
+            }
+            catch (Exception exception)
+            {
+                // This specific handler's construction failed — isolate it and continue with the siblings.
+                EventBrokerEventSource.Log.HandlerFailed(
+                    implementationType.ToString(), @event.GetType().ToString(), exception.ToString());
+                _logger?.LogError(
+                    exception, "Event handler {HandlerType} failed to construct for event {EventType}.",
+                    implementationType, @event.GetType());
+                continue;
+            }
+
+            await InvokeHandlerIsolatedAsync(group, handler, @event).ConfigureAwait(false);
         }
     }
 
@@ -241,13 +314,13 @@ public sealed class EventBroker : BackgroundService, IEventBroker
             var groups = new List<HandlerGroup>();
             foreach (Type handledType in ContravariantHandledTypes(eventType))
             {
-                Type enumerableType =
-                    typeof(IEnumerable<>).MakeGenericType(typeof(IEventHandler<>).MakeGenericType(handledType));
+                Type handlerInterfaceType = typeof(IEventHandler<>).MakeGenericType(handledType);
+                Type enumerableType = typeof(IEnumerable<>).MakeGenericType(handlerInterfaceType);
                 var invoke = (Func<object, object, CancellationToken, Task>)typeof(EventDispatch)
                     .GetMethod(nameof(BuildInvoker), BindingFlags.NonPublic | BindingFlags.Static)!
                     .MakeGenericMethod(handledType)
                     .Invoke(null, null)!;
-                groups.Add(new HandlerGroup(enumerableType, invoke));
+                groups.Add(new HandlerGroup(handlerInterfaceType, enumerableType, invoke));
             }
 
             return new EventDispatch(groups);
@@ -274,10 +347,14 @@ public sealed class EventBroker : BackgroundService, IEventBroker
             (handler, @event, cancellationToken) => ((IEventHandler<TEvent>)handler).HandleAsync((TEvent)@event, cancellationToken);
     }
 
-    // One applicable closed handler type for an event: the IEnumerable<IEventHandler<T>> to resolve from
-    // the scope, and the delegate that invokes IEventHandler<T>.HandleAsync (casting the event to T).
-    private sealed class HandlerGroup(Type enumerableType, Func<object, object, CancellationToken, Task> invoke)
+    // One applicable closed handler type for an event: the closed IEventHandler<T> (the key into
+    // EventHandlerRegistry for the construction fallback, #89), the IEnumerable<IEventHandler<T>> to resolve
+    // from the scope, and the delegate that invokes IEventHandler<T>.HandleAsync (casting the event to T).
+    private sealed class HandlerGroup(
+        Type handlerInterfaceType, Type enumerableType, Func<object, object, CancellationToken, Task> invoke)
     {
+        public Type HandlerInterfaceType { get; } = handlerInterfaceType;
+
         public Type EnumerableType { get; } = enumerableType;
 
         public Task Invoke(object handler, object @event, CancellationToken cancellationToken) =>

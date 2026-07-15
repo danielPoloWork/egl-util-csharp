@@ -53,3 +53,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0035](0035-reachable-pagination.md) | Make PaginatedList reachable via a criteria-only evaluation and ToPaginatedListAsync | Accepted |
 | [0036](0036-datetimeprovider-delegates-to-timeprovider.md) | Bridge IDateTimeProvider to the BCL TimeProvider | Accepted |
 | [0037](0037-split-mediatr-fluentvalidation-into-opt-in-package.md) | Split the MediatR/FluentValidation building blocks into the opt-in It.D4np.Util.MediatR package — **breaking (2.0)** | Accepted |
+| [0038](0038-isolate-event-handler-construction-failures.md) | Isolate event-handler construction failures in the broker | Accepted |
