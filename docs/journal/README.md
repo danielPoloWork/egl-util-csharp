@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-15 — Feat: Result functional combinators + non-throwing access (#69)](2026/07/2026-07-15-feat-result-functional-combinators.md)
 - [2026-07-14 — Feat: Specification And/Or/Not combinators + IsSatisfiedBy (#68)](2026/07/2026-07-14-feat-specification-predicate-combinators.md)
 - [2026-07-14 — Build: make the Roslyn analyzer gate real (#77)](2026/07/2026-07-14-build-enforce-analyzer-gate.md)
 - [2026-07-14 — CI: enforce the bundling invariant + pack on every PR (#63, #64)](2026/07/2026-07-14-ci-bundling-invariant-and-pack-gate.md)

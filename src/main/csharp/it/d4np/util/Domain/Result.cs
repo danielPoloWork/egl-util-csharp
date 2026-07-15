@@ -53,6 +53,21 @@ public class Result
     /// <summary>The first failure error, or <see cref="Error.None"/> when the result is successful.</summary>
     public Error Error => Errors.Count > 0 ? Errors[0] : Error.None;
 
+    /// <summary>
+    /// Folds the result to a single value: <paramref name="onSuccess"/> when successful, or
+    /// <paramref name="onFailure"/> applied to the errors. Neither branch throws for an expected failure (#69).
+    /// </summary>
+    /// <typeparam name="TResult">The folded result type.</typeparam>
+    /// <param name="onSuccess">Produces the result when successful.</param>
+    /// <param name="onFailure">Maps the errors; invoked only when failed.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="onSuccess"/> or <paramref name="onFailure"/> is <see langword="null"/>.</exception>
+    public TResult Match<TResult>(Func<TResult> onSuccess, Func<IReadOnlyList<Error>, TResult> onFailure)
+    {
+        ArgumentNullException.ThrowIfNull(onSuccess);
+        ArgumentNullException.ThrowIfNull(onFailure);
+        return IsSuccess ? onSuccess() : onFailure(Errors);
+    }
+
     /// <summary>Creates a successful result.</summary>
     /// <returns>A successful <see cref="Result"/>.</returns>
     public static Result Success() => new(true, NoErrors);

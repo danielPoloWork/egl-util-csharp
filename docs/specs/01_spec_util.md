@@ -14,8 +14,8 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 - `AggregateRoot<TId, TAggregate>` — extends `Entity<TId, TAggregate>`; accumulates domain events in a read-only `DomainEvents` collection via `RaiseDomainEvent` / `ClearDomainEvents`.
 - `IDomainEvent` — marker interface for domain events carrying an occurred-on timestamp sourced from `IDateTimeProvider`.
 - `DomainEventNotification<TEvent>` — adapts an `IDomainEvent` into a MediatR `INotification` so domain events dispatch as application notifications.
-- `Result` — success/failure of an operation without throwing; exposes `IsSuccess`/`IsFailure` and an ordered `Errors` collection (with an `Error` convenience for the first), via `Success()`/`Failure(params Error[])` factories.
-- `Result<TValue>` — generic result carrying a guarded success `Value` and the failure `Errors`, with implicit conversion from `TValue`; failures are created with the explicit `Result.Failure` factory (there is no implicit `Error` conversion — it collided with the value conversion; ADR-0020).
+- `Result` — success/failure of an operation without throwing; exposes `IsSuccess`/`IsFailure` and an ordered `Errors` collection (with an `Error` convenience for the first), via `Success()`/`Failure(params Error[])` factories, and folds to a value with `Match` (added additively in 1.x, ADR-0034).
+- `Result<TValue>` — generic result carrying a guarded success `Value` and the failure `Errors`, with implicit conversion from `TValue`; failures are created with the explicit `Result.Failure` factory (there is no implicit `Error` conversion — it collided with the value conversion; ADR-0020). Composes functionally via `Match`/`Map`/`Bind` and offers non-throwing access via `GetValueOrDefault`/`TryGetValue` (added additively in 1.x, ADR-0034).
 - `Error` — immutable `record` of `Code` + `Message`, value-equal, defining a canonical `Error.None`.
 - `Result.Combine` — aggregates many results into one that succeeds iff all succeed, else returns the collected errors.
 - `IRepository<TEntity, TId>` — generic CRUD abstraction (`GetByIdAsync`, `ListAsync`, `Add`, `Update`, `Remove`) over an aggregate root.
