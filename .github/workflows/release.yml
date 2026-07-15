@@ -59,30 +59,36 @@ jobs:
         uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with: { dotnet-version: '8.0.x' }
 
-      # Only Infrastructure is packable (it bundles Domain + Application); pack it explicitly so the
-      # non-packable projects are never packaged separately.
-      - name: Pack the single It.D4np.Util package (+ symbols)
+      # Two packable projects: the core It.D4np.Util (Infrastructure, which bundles Domain + Application)
+      # and the opt-in It.D4np.Util.MediatR (#38). Pack both explicitly so the non-packable projects are
+      # never packaged separately.
+      - name: Pack the It.D4np.Util packages (+ symbols)
         shell: bash
-        run: dotnet pack src/main/csharp/it/d4np/util/Infrastructure/It.D4np.Util.Infrastructure.csproj -c Release -o ./artifacts
+        run: |
+          dotnet pack src/main/csharp/it/d4np/util/Infrastructure/It.D4np.Util.Infrastructure.csproj -c Release -o ./artifacts
+          dotnet pack src/main/csharp/it/d4np/util/MediatR/It.D4np.Util.MediatR.csproj -c Release -o ./artifacts
 
-      - name: Assert the packed version equals the tag
+      - name: Assert every packed version equals the tag
         shell: bash
         run: |
           tag="${GITHUB_REF_NAME#v}"
-          nupkg=$(find ./artifacts -name '*.nupkg' | head -1)
-          if [ -z "$nupkg" ]; then echo "::error::dotnet pack produced no .nupkg"; exit 1; fi
-          pkgver=$(basename "$nupkg" .nupkg | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$')
-          echo "tag=$tag  packed=$pkgver"
-          if [ "$tag" != "$pkgver" ]; then
-            echo "::error::tag v$tag does not match the packed package version $pkgver — bump <Version> in Directory.Build.props to match the tag before releasing"
-            exit 1
-          fi
+          shopt -s nullglob
+          nupkgs=(./artifacts/*.nupkg)
+          if [ ${#nupkgs[@]} -eq 0 ]; then echo "::error::dotnet pack produced no .nupkg"; exit 1; fi
+          for nupkg in "${nupkgs[@]}"; do
+            pkgver=$(basename "$nupkg" .nupkg | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$')
+            echo "tag=$tag  packed=$(basename "$nupkg")  version=$pkgver"
+            if [ "$tag" != "$pkgver" ]; then
+              echo "::error::tag v$tag does not match packed $(basename "$nupkg") version $pkgver — bump <Version> in Directory.Build.props to match the tag before releasing"
+              exit 1
+            fi
+          done
 
-      # Generate a CycloneDX SBOM for the package and attach it to the release (#47, ADR-0031;
-      # docs/workflow/packaging.md calls for provenance/SBOM). Runs the pinned CycloneDX .NET tool over the
-      # single packable project — which references Domain + Application — producing a CycloneDX JSON bill of
-      # materials of the shipped dependency graph. Under CI (GITHUB_ACTIONS=true) the tool's restore honors
-      # RestoreLockedMode, so it reads the committed lockfile.
+      # Generate a CycloneDX SBOM for each package and attach it to the release (#47, ADR-0031;
+      # docs/workflow/packaging.md calls for provenance/SBOM). Runs the pinned CycloneDX .NET tool over each
+      # packable project — the core (which references Domain + Application) and the opt-in MediatR package —
+      # producing a CycloneDX JSON bill of materials of each shipped dependency graph. Under CI
+      # (GITHUB_ACTIONS=true) the tool's restore honors RestoreLockedMode, so it reads the committed lockfile.
       - name: Generate a CycloneDX SBOM
         shell: bash
         run: |
@@ -94,6 +100,11 @@ jobs:
             --output ./artifacts --output-format Json \
             --filename "It.D4np.Util.${version}.sbom.json" \
             --set-name It.D4np.Util --set-version "$version"
+          dotnet CycloneDX \
+            src/main/csharp/it/d4np/util/MediatR/It.D4np.Util.MediatR.csproj \
+            --output ./artifacts --output-format Json \
+            --filename "It.D4np.Util.MediatR.${version}.sbom.json" \
+            --set-name It.D4np.Util.MediatR --set-version "$version"
 
       # The curated notes under docs/releases/<tag>.md are the reviewed release artifact (docs/workflow/
       # release.md step 4). Require them so a tag cannot be drafted with only GitHub's auto-generated body

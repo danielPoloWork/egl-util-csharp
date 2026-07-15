@@ -104,6 +104,23 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **BREAKING:** the MediatR/FluentValidation building blocks moved to the new opt-in `It.D4np.Util.MediatR`
+  package, so the core `It.D4np.Util` package imposes neither dependency (#38, ADR-0037). `It.D4np.Util`
+  bundled MediatR (12.5.0) and FluentValidation (11.11.0) transitively onto **every** consumer — including one
+  using only the DDD/Result core — because `DomainEventNotification<TEvent>` and
+  `ValidationPipelineBehavior<TRequest, TResponse>` lived in `It.D4np.Util.Application`. Both types (and the
+  `DomainEventNotification.Create` factory) now ship in a separate package/assembly `It.D4np.Util.MediatR`,
+  which depends on `It.D4np.Util` + `MediatR` + `FluentValidation`; the core package declares neither (verified
+  by an assembly-reference test and a CI nuspec check). **Namespaces changed:** `DomainEventNotification` is now
+  under `It.D4np.Util.MediatR` and `ValidationPipelineBehavior` under `It.D4np.Util.MediatR.FluentValidation`
+  (both were `It.D4np.Util.Application`). **DI changed:** `AddD4npUtil` no longer registers the validation
+  pipeline behavior or scans FluentValidation validators — the new package exposes
+  `AddD4npUtilMediatRValidation(...)` (behavior + validator scan) and the convenience umbrella
+  `AddD4npUtilMediatR(...)`. Migration: add the `It.D4np.Util.MediatR` package, update the two `using`s, and call
+  `AddD4npUtilMediatRValidation(...)` (or `AddD4npUtilMediatR(...)`) after `AddD4npUtil(...)`; otherwise
+  validators silently stop running. A **MAJOR** change (2.0) — accrues toward the maintainer-assembled 2.0. The
+  new reflective DI entry points carry the same trim/AOT annotations (#49) and `NoInlining` default-scan guard
+  (#90) as the core.
 - `Result<TValue>` is now `sealed` (#95). Its only constructor is `internal`, so no consumer could ever
   derive from it — the type was de-facto sealed; declaring it so documents that reality and matches every
   other concrete public type (`Error`, `PaginatedList`, …). The base non-generic `Result` keeps its

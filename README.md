@@ -22,11 +22,18 @@ The frozen specification is in
 
 ## Install
 
-The library ships as a single NuGet package bundling the domain, application, and infrastructure
-layers:
+The core ships as a single NuGet package bundling the domain, application, and infrastructure
+layers — with **no MediatR or FluentValidation dependency**:
 
 ```bash
 dotnet add package It.D4np.Util
+```
+
+The MediatR/FluentValidation integration — the `DomainEventNotification` adapter and the FluentValidation
+`ValidationPipelineBehavior` — is an **opt-in** package. Add it only if you use them:
+
+```bash
+dotnet add package It.D4np.Util.MediatR
 ```
 
 ## Quick start
@@ -43,12 +50,23 @@ public Result<User> Register(string email) =>
 ```
 
 One-call dependency-injection wiring — registers the building blocks and assembly-scans for your
-event handlers and FluentValidation validators:
+event handlers:
 
 ```csharp
 using It.D4np.Util.Infrastructure;
 
 services.AddD4npUtil(typeof(Program).Assembly);
+```
+
+With the opt-in `It.D4np.Util.MediatR` package, also wire its FluentValidation pipeline behavior and
+validator scan:
+
+```csharp
+using It.D4np.Util.Infrastructure;
+using It.D4np.Util.MediatR;
+
+services.AddD4npUtil(typeof(Program).Assembly)          // core services + event-handler scan
+        .AddD4npUtilMediatR(typeof(Program).Assembly);  // + MediatR validation behavior & validator scan
 ```
 
 ## Build & test

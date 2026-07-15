@@ -116,11 +116,15 @@ jobs:
       - run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total
 
   # ---------------------------------------------------------------------------
-  # Exercise the single-package pack on every PR (#64): run `dotnet pack` and assert the produced
-  # nupkg bundles all three layer assemblies, so a regression in the IncludeReferencedProjectsInPackage
-  # target (a dropped Domain/Application DLL, or a pack error) fails CI instead of shipping silently in a
-  # patch. API-compatibility validation (EnablePackageValidation + a baseline) is deferred to the 2.0 cut,
-  # since the current surface already carries the accrued 2.0-breaking changes and would fail a 1.0.0 baseline.
+  # Exercise the pack of BOTH packages on every PR (#64, #38): run `dotnet pack` and assert (a) the core
+  # It.D4np.Util nupkg bundles all three layer assemblies — so a regression in the
+  # IncludeReferencedProjectsInPackage target fails CI instead of shipping silently in a patch — and
+  # (b) the split boundary holds: the core declares NO MediatR/FluentValidation dependency, while the
+  # opt-in It.D4np.Util.MediatR ships only its own assembly (the core layers arrive via the It.D4np.Util
+  # dependency, never re-bundled) and depends on It.D4np.Util + MediatR + FluentValidation. This is the
+  # authoritative package-level guarantee that the core stays free of both couplings. API-compatibility
+  # validation (EnablePackageValidation + a baseline) is deferred to the 2.0 cut, since the current surface
+  # already carries the accrued 2.0-breaking changes and would fail a 1.0.0 baseline.
   # ---------------------------------------------------------------------------
   package:
     name: package / pack + bundling
@@ -130,16 +134,55 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with: { dotnet-version: '8.0.x' }
-      - name: Pack and assert the bundled assemblies are present
+      - name: Pack both packages and assert bundling + split isolation
         shell: bash
         run: |
           dotnet pack src/main/csharp/it/d4np/util/Infrastructure/It.D4np.Util.Infrastructure.csproj -c Release -o ./artifacts
-          nupkg=$(find ./artifacts -name 'It.D4np.Util.*.nupkg' | head -1)
-          if [ -z "$nupkg" ]; then echo "::error::dotnet pack produced no .nupkg"; exit 1; fi
+          dotnet pack src/main/csharp/it/d4np/util/MediatR/It.D4np.Util.MediatR.csproj -c Release -o ./artifacts
+
+          # The `[0-9]` after the prefix isolates the core It.D4np.Util.<version>.nupkg from It.D4np.Util.MediatR.<version>.nupkg.
+          core=$(find ./artifacts -name 'It.D4np.Util.[0-9]*.nupkg' | head -1)
+          mediatr=$(find ./artifacts -name 'It.D4np.Util.MediatR.*.nupkg' | head -1)
+          if [ -z "$core" ]; then echo "::error::no core It.D4np.Util .nupkg produced"; exit 1; fi
+          if [ -z "$mediatr" ]; then echo "::error::no It.D4np.Util.MediatR .nupkg produced"; exit 1; fi
+
+          # (a) The core package bundles all three layer assemblies (#64).
           for dll in It.D4np.Util.Domain.dll It.D4np.Util.Application.dll It.D4np.Util.Infrastructure.dll; do
-            if ! unzip -l "$nupkg" | grep -q "lib/net8.0/$dll"; then
-              echo "::error::packed nupkg is missing lib/net8.0/$dll — the bundling target dropped a layer (#64)"
+            if ! unzip -l "$core" | grep -q "lib/net8.0/$dll"; then
+              echo "::error::core nupkg is missing lib/net8.0/$dll — the bundling target dropped a layer (#64)"
               exit 1
             fi
           done
-          echo "OK: the nupkg bundles all three layer assemblies."
+
+          # (b) The core package must declare NO MediatR/FluentValidation dependency (#38) — the exact
+          # `id="..."` (with the closing quote) never matches id="It.D4np.Util.MediatR".
+          core_nuspec=$(unzip -p "$core" '*.nuspec')
+          for dep in 'id="MediatR"' 'id="FluentValidation"'; do
+            if echo "$core_nuspec" | grep -q "$dep"; then
+              echo "::error::core It.D4np.Util nuspec declares $dep — the MediatR/FluentValidation coupling must stay in It.D4np.Util.MediatR (#38)"
+              exit 1
+            fi
+          done
+
+          # The opt-in package ships only its own assembly; the core layers must NOT be re-bundled (they
+          # arrive via the It.D4np.Util dependency).
+          if ! unzip -l "$mediatr" | grep -q "lib/net8.0/It.D4np.Util.MediatR.dll"; then
+            echo "::error::It.D4np.Util.MediatR nupkg is missing lib/net8.0/It.D4np.Util.MediatR.dll"
+            exit 1
+          fi
+          for dll in It.D4np.Util.Domain.dll It.D4np.Util.Application.dll It.D4np.Util.Infrastructure.dll; do
+            if unzip -l "$mediatr" | grep -q "lib/net8.0/$dll"; then
+              echo "::error::It.D4np.Util.MediatR nupkg re-bundles $dll — it must depend on the It.D4np.Util package instead (#38)"
+              exit 1
+            fi
+          done
+
+          # ... and declares exactly the expected dependencies: the core package plus MediatR + FluentValidation.
+          mediatr_nuspec=$(unzip -p "$mediatr" '*.nuspec')
+          for dep in 'id="It.D4np.Util"' 'id="MediatR"' 'id="FluentValidation"'; do
+            if ! echo "$mediatr_nuspec" | grep -q "$dep"; then
+              echo "::error::It.D4np.Util.MediatR nuspec is missing dependency $dep (#38)"
+              exit 1
+            fi
+          done
+          echo "OK: core bundles all layers with no MediatR/FluentValidation dep; the opt-in package ships only its own assembly and depends on It.D4np.Util + MediatR + FluentValidation."

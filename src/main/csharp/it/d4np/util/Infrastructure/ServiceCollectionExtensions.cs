@@ -2,11 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-using FluentValidation;
-
 using It.D4np.Util.Application;
-
-using MediatR;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -31,8 +27,10 @@ public static class ServiceCollectionExtensions
     /// <see cref="TimeProvider"/>), <see cref="IPasswordHasher"/> → <see cref="PasswordHasher"/>,
     /// <see cref="ICacheService"/> → <see cref="CacheService"/>, and <see cref="IEventBroker"/> →
     /// <see cref="EventBroker"/> (the same instance also runs as an <c>IHostedService</c>). The
-    /// <see cref="ValidationPipelineBehavior{TRequest, TResponse}"/> is registered as an open-generic
-    /// MediatR <see cref="IPipelineBehavior{TRequest, TResponse}"/>.
+    /// MediatR/FluentValidation building blocks (the domain-event notification adapter and the validation
+    /// pipeline behavior) are <em>not</em> registered here — they live in the opt-in
+    /// <c>It.D4np.Util.MediatR</c> package (call its <c>AddD4npUtilMediatR</c>) so the core imposes neither
+    /// dependency (#38).
     /// </para>
     /// <para>
     /// <b>Overriding a default.</b> Register your own implementation <em>before</em> calling this: the core
@@ -46,10 +44,9 @@ public static class ServiceCollectionExtensions
     /// The consumer supplies the runtime dependencies this wiring assumes: an
     /// <see cref="Microsoft.Extensions.Caching.Memory.IMemoryCache"/> and an
     /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> (for
-    /// <see cref="CacheService"/>), MediatR itself, and — for event delivery — logging. Assembly
-    /// scanning registers every concrete <see cref="IEventHandler{TEvent}"/> and
-    /// <see cref="IValidator{T}"/> as transient; open-generic type definitions are skipped (DI cannot
-    /// construct them). When no assembly is given, the assembly that <em>directly</em> calls this method is
+    /// <see cref="CacheService"/>) and — for event delivery — logging. Assembly scanning registers every
+    /// concrete <see cref="IEventHandler{TEvent}"/> as transient; open-generic type definitions are skipped
+    /// (DI cannot construct them). When no assembly is given, the assembly that <em>directly</em> calls this method is
     /// scanned (via <see cref="Assembly.GetCallingAssembly"/>; the method is marked
     /// <see cref="MethodImplOptions.NoInlining"/> so the JIT cannot fold that frame away and resolve the
     /// wrong assembly — #90). Note this means a wrapper: a shared-library convenience/extension method that
@@ -109,18 +106,15 @@ public static class ServiceCollectionExtensions
             services.AddHostedService(static provider => provider.GetRequiredService<EventBroker>());
         }
 
-        // Run FluentValidation validators as a MediatR pipeline step. TryAddEnumerable (keyed on the
-        // implementation type) keeps this idempotent, so calling AddD4npUtil more than once — e.g. a
-        // library and its host both call it — does not register the behavior twice and run every
-        // validator twice per request.
-        services.TryAddEnumerable(ServiceDescriptor.Transient(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>)));
+        // The MediatR FluentValidation pipeline behavior and validator scan live in the opt-in
+        // It.D4np.Util.MediatR package (AddD4npUtilMediatRValidation) so the core imposes neither MediatR
+        // nor FluentValidation (#38).
 
         // Specifications are deliberately NOT scanned: they are query objects built with runtime
         // arguments (Specification<TEntity> sets its criteria via the constructor), so a DI registration
         // cannot supply those parameters and a parameterized spec breaks ValidateOnBuild (#67). Consumers
         // new up a specification where they use it.
         RegisterImplementations(services, typeof(IEventHandler<>), toScan);
-        RegisterImplementations(services, typeof(IValidator<>), toScan);
 
         return services;
     }
@@ -138,8 +132,7 @@ public static class ServiceCollectionExtensions
             // as abstractions. Their GetInterfaces() yields the open constructed interface
             // (`IEventHandler`1[TEvent]`), which still matches the target below, so registering the type
             // against it would make BuildServiceProvider throw ("Cannot instantiate implementation type …")
-            // for the entire application. MediatR and FluentValidation skip generic definitions likewise; a
-            // handler or validator must be a closed, new-able type to be auto-registered.
+            // for the entire application. A handler must be a closed, new-able type to be auto-registered.
             if (type.IsAbstract || type.IsInterface || type.ContainsGenericParameters)
             {
                 continue;

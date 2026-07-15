@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-15 — Refactor: split the MediatR/FluentValidation blocks into the opt-in It.D4np.Util.MediatR package (#38) — breaking (2.0)](2026/07/2026-07-15-refactor-split-mediatr-package.md)
 - [2026-07-15 — Feat: bridge IDateTimeProvider to the BCL TimeProvider (#97)](2026/07/2026-07-15-feat-timeprovider-interop.md)
 - [2026-07-15 — Refactor: seal Result<TValue> (#95)](2026/07/2026-07-15-refactor-seal-result-of-t.md)
 - [2026-07-15 — Feat: make PaginatedList reachable (criteria-only + ToPaginatedListAsync) (#70)](2026/07/2026-07-15-feat-reachable-pagination.md)

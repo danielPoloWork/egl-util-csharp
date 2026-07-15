@@ -29,9 +29,12 @@ contract (the "congruence checks"):
      English source, and the check fails if the source's current digest differs (the source
      changed and the translation was not re-synced). Content-based, so it is stable across
      the repository's squash-merge.
-  8. bundled-deps    — (single-package layout only) every PackageReference of a bundled project
-     appears, at an identical version, in the packable project — so the nuspec's dependency group
-     covers every third-party assembly the bundled DLLs reference (#63).
+  8. bundled-deps    — every PackageReference of a bundled project appears, at an identical version,
+     in the packable project that re-packs its output — so the nuspec's dependency group covers every
+     third-party assembly the bundled DLLs reference (#63). Only the core It.D4np.Util package bundles
+     (Domain + Application, re-packed into Infrastructure); the opt-in It.D4np.Util.MediatR package
+     bundles nothing — it depends on the It.D4np.Util package and references Domain PrivateAssets=all
+     only to compile against IDomainEvent — so it needs no entry here (#38).
 
 Each check is independent; all run, then the report lists every failure. The checks are
 designed to PASS on a freshly-generated repository (empty catalogues, no releases yet).
@@ -63,9 +66,12 @@ CONFIG = {
     "src_main": "src/main/csharp/it/d4np/util",
     # Whether documentation i18n is enabled (gates check 7).
     "i18n_enabled": True,
-    # Single-package bundling (check 8): the one packable project bundles the referenced projects'
+    # Bundling (check 8): the core packable project (Infrastructure) re-packs the referenced projects'
     # outputs (PrivateAssets=all), so their PackageReferences do NOT flow into the nuspec and must be
-    # mirrored — at an identical version — in the packable project. Empty/None disables the check.
+    # mirrored — at an identical version — in that packable project. Empty/None disables the check. The
+    # second packable project (It.D4np.Util.MediatR, #38) re-packs nothing: it depends on the It.D4np.Util
+    # package and references Domain PrivateAssets=all only to compile against IDomainEvent (whose assembly
+    # ships in It.D4np.Util), so it declares no bundled projects and needs no entry here.
     "packable_project": "src/main/csharp/it/d4np/util/Infrastructure/It.D4np.Util.Infrastructure.csproj",
     "bundled_projects": [
         "src/main/csharp/it/d4np/util/Domain/It.D4np.Util.Domain.csproj",

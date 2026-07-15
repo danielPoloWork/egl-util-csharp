@@ -13,7 +13,7 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 - `ValueObject` — abstract base with structural value equality and matching `GetHashCode`, derived from an explicit `GetEqualityComponents()` sequence.
 - `AggregateRoot<TId, TAggregate>` — extends `Entity<TId, TAggregate>`; accumulates domain events in a read-only `DomainEvents` collection via `RaiseDomainEvent` / `ClearDomainEvents`.
 - `IDomainEvent` — marker interface for domain events carrying an occurred-on timestamp sourced from `IDateTimeProvider`.
-- `DomainEventNotification<TEvent>` — adapts an `IDomainEvent` into a MediatR `INotification` so domain events dispatch as application notifications.
+- `DomainEventNotification<TEvent>` — adapts an `IDomainEvent` into a MediatR `INotification` so domain events dispatch as application notifications; ships in the opt-in `It.D4np.Util.MediatR` package under `It.D4np.Util.MediatR` (ADR-0037).
 - `Result` — success/failure of an operation without throwing; exposes `IsSuccess`/`IsFailure` and an ordered `Errors` collection (with an `Error` convenience for the first), via `Success()`/`Failure(params Error[])` factories, and folds to a value with `Match` (added additively in 1.x, ADR-0034).
 - `Result<TValue>` — generic result carrying a guarded success `Value` and the failure `Errors`, with implicit conversion from `TValue`; failures are created with the explicit `Result.Failure` factory (there is no implicit `Error` conversion — it collided with the value conversion; ADR-0020). Composes functionally via `Match`/`Map`/`Bind` and offers non-throwing access via `GetValueOrDefault`/`TryGetValue` (added additively in 1.x, ADR-0034).
 - `Error` — immutable `record` of `Code` + `Message`, value-equal, defining a canonical `Error.None`.
@@ -28,11 +28,11 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 - `IEventHandler<TEvent>` — consumer contract (`HandleAsync(TEvent, CancellationToken)`) resolved per event type.
 - `IPasswordHasher` — algorithm-agnostic abstraction for secure password hashing and verification (`Hash`, `Verify`; plus additive `NeedsRehash` and `ReadOnlySpan<char>` overloads as default interface members, ADR-0029).
 - `PasswordHasher` — PBKDF2 implementation with per-password random salt, configurable high iteration count, and constant-time verification.
-- `ValidationPipelineBehavior<TRequest, TResponse>` — MediatR pipeline behavior running all FluentValidation validators and short-circuiting on failure.
+- `ValidationPipelineBehavior<TRequest, TResponse>` — MediatR pipeline behavior running all FluentValidation validators and short-circuiting on failure; ships in the opt-in `It.D4np.Util.MediatR` package under `It.D4np.Util.MediatR.FluentValidation` (ADR-0037).
 - `ICacheService` — two-level (in-memory + distributed/Redis) cache abstraction with `GetOrCreateAsync`, TTL, and key-based invalidation.
 - `DistributedCacheExtensions` — typed get/set over `IDistributedCache` using compact System.Text.Json serialization.
 - `IDateTimeProvider` / `DateTimeProvider` — injectable abstraction over the system clock (UtcNow) to make time deterministic in tests; on .NET 8+ the default delegates to `System.TimeProvider` (`TimeProvider.System` is registered alongside), a thin facade over the BCL clock (ADR-0036).
-- `ServiceCollectionExtensions` — assembly-scanning auto-registration of handlers and validators into `IServiceCollection` (specifications are query objects constructed with their runtime arguments, not auto-registered — ADR-0019).
+- `ServiceCollectionExtensions.AddD4npUtil(...)` — assembly-scanning auto-registration of event handlers into `IServiceCollection` (specifications are query objects constructed with their runtime arguments, not auto-registered — ADR-0019). FluentValidation validator scanning and the validation pipeline behavior moved to the opt-in `It.D4np.Util.MediatR` package's `AddD4npUtilMediatRValidation(...)` / `AddD4npUtilMediatR(...)` (ADR-0037).
 - `PaginatedList<T>` — encapsulates a page of results with `Items`, `PageIndex`, `TotalCount`, `TotalPages`, `HasNext`/`HasPrevious`.
 
 ## 3. Non-Functional Requirements
@@ -43,23 +43,28 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 - Thread safety: `EventBroker` is safe for concurrent publishers with documented delivery and ordering guarantees.
 - Security: `PasswordHasher` uses PBKDF2 with >= 600,000 iterations (OWASP 2024), >= 128-bit random salt, and constant-time verification.
 - Test determinism: time is injected via `IDateTimeProvider`; no `DateTime.UtcNow` in shipped logic.
-- Dependency policy: the domain layer has zero third-party dependencies; outer layers depend only on MediatR, FluentValidation, EF Core, and Microsoft.Extensions abstractions.
+- Dependency policy: the domain layer has zero third-party dependencies; the core `It.D4np.Util` package depends only on EF Core and the Microsoft.Extensions abstractions, and the MediatR/FluentValidation coupling is isolated to the opt-in `It.D4np.Util.MediatR` package (ADR-0037).
 - Portability: targets `net8.0`; builds and tests green on Linux, Windows, and macOS under .NET 8.
 - Quality gates: >= 80% line coverage (coverlet), `dotnet format` clean, Roslyn analyzers as errors, deterministic build.
 - API stability: the public surface is frozen at 1.0 and protected by SemVer.
 
 ## 4. Logical Architecture & Core Algorithm
 
-Clean / Onion architecture: dependencies point inward toward the domain. The package is organised into three layers, separated by namespace under `It.D4np.Util`:
+Clean / Onion architecture: dependencies point inward toward the domain. The core is organised into three layers, separated by namespace under `It.D4np.Util` and shipped as the single `It.D4np.Util` NuGet package; an optional fourth assembly ships separately as the opt-in `It.D4np.Util.MediatR` package (ADR-0037):
 
 - Domain (`It.D4np.Util.Domain`) — Entity<TId, TEntity>, ValueObject, AggregateRoot<TId, TAggregate>, IDomainEvent, and the functional Result/Result<T>/Error model. Zero external dependencies.
-- Application (`It.D4np.Util.Application`) — ISpecification<T>, IRepository<TEntity,TId>, IUnitOfWork, IEventBroker, ICacheService, IDateTimeProvider, DomainEventNotification<TEvent>, IPasswordHasher, ValidationPipelineBehavior, PaginatedList<T>. Depends on Domain plus the MediatR / FluentValidation abstractions.
-- Infrastructure (`It.D4np.Util.Infrastructure`) — SpecificationEvaluator (EF Core), EventBroker (Channels), PasswordHasher (PBKDF2), CacheService (two-level in-memory + distributed), DistributedCacheExtensions (Redis/JSON), DbContextExtensions, DateTimeProvider, ServiceCollectionExtensions. Depends on Application plus concrete tech.
+- Application (`It.D4np.Util.Application`) — ISpecification<T>, IRepository<TEntity,TId>, IUnitOfWork, IEventBroker, ICacheService, IDateTimeProvider, IPasswordHasher, PaginatedList<T>. Depends on Domain only.
+- Infrastructure (`It.D4np.Util.Infrastructure`) — SpecificationEvaluator (EF Core), EventBroker (Channels), PasswordHasher (PBKDF2), CacheService (two-level in-memory + distributed), DistributedCacheExtensions (Redis/JSON), DbContextExtensions, DateTimeProvider, ServiceCollectionExtensions. Depends on Application plus concrete tech. The single packable project of the core: the `It.D4np.Util` package bundles Domain + Application + Infrastructure.
+- MediatR bridge (`It.D4np.Util.MediatR`, opt-in package) — DomainEventNotification<TEvent> (namespace `It.D4np.Util.MediatR`) and ValidationPipelineBehavior<TRequest, TResponse> (namespace `It.D4np.Util.MediatR.FluentValidation`), plus the DI extensions `AddD4npUtilMediatR` / `AddD4npUtilMediatRValidation`. Depends on the `It.D4np.Util` package plus MediatR and FluentValidation, so those two dependencies reach only consumers who opt in; kept out of the core so a DDD/Result-only consumer takes neither.
 
 Dependency direction and the domain-event flow:
 
 ```mermaid
 flowchart TB
+  subgraph MediatR["It.D4np.Util.MediatR (opt-in package)"]
+    DEN[DomainEventNotification to MediatR]
+    VAL[ValidationPipelineBehavior / FluentValidation]
+  end
   subgraph Infrastructure
     EVB[EventBroker / Channels]
     PH[PasswordHasher / PBKDF2]
@@ -71,13 +76,12 @@ flowchart TB
     RES[Result / Error]
     SPEC[ISpecification]
     REPO[IRepository / IUnitOfWork]
-    DEN[DomainEventNotification to MediatR]
-    VAL[ValidationPipelineBehavior]
   end
   subgraph Domain
     AGG[AggregateRoot raises IDomainEvent]
   end
   Infrastructure --> Application --> Domain
+  MediatR -. opt-in; depends on the It.D4np.Util package .-> Infrastructure
   AGG -. raised .-> DBX
   DBX -. on SaveChanges .-> DEN
   DEN -. publish .-> EVB
@@ -86,19 +90,24 @@ flowchart TB
 
 ## 5. Public Interface
 
-Consumers import via `using It.D4np.Util;`. The public surface:
+Consumers import the core via `using It.D4np.Util;` (from the `It.D4np.Util` package). The core public surface:
 
 - `Entity<TId, TEntity>`, `AggregateRoot<TId, TAggregate>`, `ValueObject` — domain primitives.
-- `IDomainEvent`, `DomainEventNotification<TEvent>` — domain-event surface.
+- `IDomainEvent` — domain-event marker (raised in the Domain layer).
 - `Result`, `Result<TValue>`, `Error`, `Result.Combine(...)` — functional error model.
 - `IRepository<TEntity, TId>`, `ISpecification<TEntity>`, `SpecificationEvaluator` — query/persistence.
 - `IUnitOfWork`, `DbContextExtensions`, `DomainEventSnapshot` — transaction + event dispatch (post-save change-tracker dispatch, or capture-before-save via `DomainEventSnapshot`).
 - `IEventBroker`, `EventBroker`, `IEventHandler<TEvent>` — in-memory pub/sub.
 - `IPasswordHasher`, `PasswordHasher` — password hashing.
-- `ValidationPipelineBehavior<TRequest, TResponse>` — MediatR validation.
 - `ICacheService`, `DistributedCacheExtensions` — two-level caching.
 - `IDateTimeProvider`, `DateTimeProvider`, `PaginatedList<T>` — utilities.
-- `ServiceCollectionExtensions.AddD4npUtil(...)` — DI auto-registration.
+- `ServiceCollectionExtensions.AddD4npUtil(...)` — DI auto-registration (core services + event-handler scan).
+
+The opt-in `It.D4np.Util.MediatR` package adds the MediatR/FluentValidation bridge — reference it only if you use them (ADR-0037):
+
+- `DomainEventNotification<TEvent>` and the `DomainEventNotification.Create`/`Create<TEvent>` factory — namespace `It.D4np.Util.MediatR`.
+- `ValidationPipelineBehavior<TRequest, TResponse>` — namespace `It.D4np.Util.MediatR.FluentValidation`.
+- `ServiceCollectionExtensions.AddD4npUtilMediatR(...)` / `AddD4npUtilMediatRValidation(...)` — DI wiring for the validation pipeline behavior and the FluentValidation validator scan.
 
 ## 6. Verification & Test Strategy
 

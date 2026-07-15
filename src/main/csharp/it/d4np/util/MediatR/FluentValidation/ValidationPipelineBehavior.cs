@@ -1,9 +1,11 @@
-using FluentValidation;
-using FluentValidation.Results;
+// global:: — the containing namespace It.D4np.Util.MediatR(.FluentValidation) would otherwise shadow the
+// MediatR and FluentValidation packages.
+using global::FluentValidation;
+using global::FluentValidation.Results;
 
-using MediatR;
+using global::MediatR;
 
-namespace It.D4np.Util.Application;
+namespace It.D4np.Util.MediatR.FluentValidation;
 
 /// <summary>
 /// A MediatR pipeline behavior that runs every registered FluentValidation <see cref="IValidator{T}"/>
@@ -11,6 +13,7 @@ namespace It.D4np.Util.Application;
 /// failures, the behavior short-circuits the pipeline by throwing a <see cref="ValidationException"/>
 /// carrying the aggregated failures; otherwise it invokes the rest of the pipeline. Pipeline behaviors
 /// form a Chain of Responsibility — each decides whether to pass the request to <c>next</c> or stop it.
+/// Part of the opt-in <c>It.D4np.Util.MediatR</c> package (#38).
 /// </summary>
 /// <typeparam name="TRequest">The request type flowing through the pipeline.</typeparam>
 /// <typeparam name="TResponse">The response type the downstream handler produces.</typeparam>

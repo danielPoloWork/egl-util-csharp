@@ -4,11 +4,6 @@
     <ProjectReference Include="..\Domain\It.D4np.Util.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="FluentValidation" Version="11.11.0" />
-    <PackageReference Include="MediatR" Version="12.5.0" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -16,7 +11,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Bundled into the single It.D4np.Util package via the Infrastructure project; not published on its own. -->
     <IsPackable>false</IsPackable>
-    <Description>Application-layer building blocks for egl-util-csharp: domain-event notifications onto MediatR and a FluentValidation pipeline behavior.</Description>
+    <Description>Application-layer building blocks for egl-util-csharp: repository/specification/unit-of-work abstractions, the event-broker and cache contracts, and the clock/paging utilities. The MediatR/FluentValidation-coupled types live in the opt-in It.D4np.Util.MediatR package (#38).</Description>
   </PropertyGroup>
 
 </Project>

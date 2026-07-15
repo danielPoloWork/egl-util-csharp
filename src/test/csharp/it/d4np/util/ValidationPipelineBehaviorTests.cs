@@ -1,8 +1,8 @@
-using FluentValidation;
+// global:: — It.D4np.Util.MediatR(.FluentValidation) shadows the packages from under the It.D4np.Util.* tree.
+using global::FluentValidation;
+using global::MediatR;
 
-using It.D4np.Util.Application;
-
-using MediatR;
+using It.D4np.Util.MediatR.FluentValidation;
 
 namespace It.D4np.Util.Tests;
 
