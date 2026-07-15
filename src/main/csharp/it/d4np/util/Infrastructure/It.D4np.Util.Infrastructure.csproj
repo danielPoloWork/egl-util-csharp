@@ -36,7 +36,7 @@
     <PackageId>It.D4np.Util</PackageId>
     <Authors>Daniel Polo</Authors>
     <Product>egl-util-csharp</Product>
-    <PackageDescription>Strongly-typed DDD, Clean Architecture, CQRS and functional Result building blocks for .NET 8: entities, value objects, aggregates, the Result/Error model, repository/specification/unit-of-work, an in-memory event broker, PBKDF2 password hashing, FluentValidation pipeline behavior, and a two-level cache.</PackageDescription>
+    <PackageDescription>Strongly-typed DDD, Clean Architecture, CQRS and functional Result building blocks for .NET 8: entities, value objects, aggregates, the Result/Error model, repository/specification/unit-of-work, an in-memory event broker, PBKDF2 password hashing, and a two-level cache. (MediatR/FluentValidation integration is the opt-in It.D4np.Util.MediatR package.)</PackageDescription>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>Copyright (c) 2026 Daniel Polo</Copyright>
     <PackageProjectUrl>https://github.com/danielPoloWork/egl-util-csharp</PackageProjectUrl>
@@ -46,6 +46,12 @@
     <PackageTags>ddd;clean-architecture;cqrs;result;repository;specification;mediator;validation;caching;dotnet</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- Package validation (#64), enabled at the 2.0 cut. No PackageValidationBaselineVersion yet: 2.0.0 is
+         the first major that can serve as an API-compat baseline (a 1.0.0 baseline would fail on the
+         intended 2.0 breaking changes, and 2.0.0 is not published while it is being built). Set
+         PackageValidationBaselineVersion=2.0.0 in the first post-2.0.0 change so 2.0.x is validated
+         against 2.0.0. Enabled now, it still runs the baseline-free framework/consistency validators. -->
+    <EnablePackageValidation>true</EnablePackageValidation>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeReferencedProjectsInPackage</TargetsForTfmSpecificBuildOutput>
   </PropertyGroup>
 

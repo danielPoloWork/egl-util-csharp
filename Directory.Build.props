@@ -16,7 +16,7 @@
       <Version>. Bump here in the release PR, in lockstep with the README `Status` badge (enforced by
       tools/consistency_lint.py). See ADR-0030.
     -->
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

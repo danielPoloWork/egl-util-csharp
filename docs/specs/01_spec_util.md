@@ -46,7 +46,7 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 - Dependency policy: the domain layer has zero third-party dependencies; the core `It.D4np.Util` package depends only on EF Core and the Microsoft.Extensions abstractions, and the MediatR/FluentValidation coupling is isolated to the opt-in `It.D4np.Util.MediatR` package (ADR-0037).
 - Portability: targets `net8.0`; builds and tests green on Linux, Windows, and macOS under .NET 8.
 - Quality gates: >= 80% line coverage (coverlet), `dotnet format` clean, Roslyn analyzers as errors, deterministic build.
-- API stability: the public surface is frozen at 1.0 and protected by SemVer.
+- API stability: the public surface is protected by SemVer. 1.0 froze the initial surface; 2.0 rolls up the breaking changes accrued after it (see the changelog and ADR-0020/0027/0028/0030/0037).
 
 ## 4. Logical Architecture & Core Algorithm
 

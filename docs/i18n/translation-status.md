@@ -9,5 +9,5 @@ stable across the repository's squash-merge.
 
 | English source | Language | Translation | Source digest | Status |
 |---|---|---|---|---|
-| [README.md](../../README.md) | 简体中文 (Simplified Chinese) | [zh/README.md](zh/README.md) | `052e1bc02a908dd3` | `translated` |
-| [README.md](../../README.md) | 日本語 (Japanese) | [jp/README.md](jp/README.md) | `052e1bc02a908dd3` | `translated` |
+| [README.md](../../README.md) | 简体中文 (Simplified Chinese) | [zh/README.md](zh/README.md) | `d5bfb8ed97cbf5c8` | `translated` |
+| [README.md](../../README.md) | 日本語 (Japanese) | [jp/README.md](jp/README.md) | `d5bfb8ed97cbf5c8` | `translated` |
