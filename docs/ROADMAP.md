@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released**; **v2.0.0 prepared** (release PR drafted — the maintainer tags/publishes) rolling up the post-1.0 breaking changes. The public API follows SemVer (ADR-0010, ADR-0030).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-15 — release: prepare v2.0.0](journal/2026/07/2026-07-15-release-v2.0.0.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-15 — docs: package-specific NuGet READMEs (#80) + drop the unimplemented DocFX claim (#83)](journal/2026/07/2026-07-15-docs-nuget-readmes-and-drop-docfx-claim.md).
 
 ---
 

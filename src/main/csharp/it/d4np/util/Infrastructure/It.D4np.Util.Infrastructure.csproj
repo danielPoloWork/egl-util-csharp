@@ -42,7 +42,7 @@
     <PackageProjectUrl>https://github.com/danielPoloWork/egl-util-csharp</PackageProjectUrl>
     <RepositoryUrl>https://github.com/danielPoloWork/egl-util-csharp</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>PackageReadme.md</PackageReadmeFile>
     <PackageTags>ddd;clean-architecture;cqrs;result;repository;specification;mediator;validation;caching;dotnet</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -56,7 +56,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="$(RepoRoot)README.md" Pack="true" PackagePath="\" />
+    <!-- A package-specific README with absolute URLs: the repo README's relative links and translation
+         switcher render as broken links on nuget.org (#80). -->
+    <None Include="PackageReadme.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <!-- Bundle the (PrivateAssets=all) referenced project outputs — Domain and Application, plus their

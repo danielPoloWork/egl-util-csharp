@@ -27,7 +27,6 @@ README ↔ ROADMAP milestone agreement, and bug-ledger integrity.
 
 ## API documentation
 
-Public symbols are documented with `DocFX`-compatible comments. The API-docs build
-must be warning-free (quality bar, `AGENTS.md` §10). Narrative documentation lives in
-Markdown under `docs/`; the split between generated API docs and hand-written narrative is
-recorded in an ADR if non-obvious.
+Public symbols carry XML-doc comments, emitted via `GenerateDocumentationFile` and shipped in
+the NuGet package (so a consumer's IDE shows them). Narrative documentation lives in Markdown
+under `docs/`. There is no separate generated API-docs site.
