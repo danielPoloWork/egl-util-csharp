@@ -73,12 +73,12 @@ flowchart TB
     DBX[DbContextExtensions]
   end
   subgraph Application
-    RES[Result / Error]
     SPEC[ISpecification]
     REPO[IRepository / IUnitOfWork]
   end
   subgraph Domain
     AGG[AggregateRoot raises IDomainEvent]
+    RES[Result / Error]
   end
   Infrastructure --> Application --> Domain
   MediatR -. opt-in; depends on the It.D4np.Util package .-> Infrastructure
@@ -90,7 +90,7 @@ flowchart TB
 
 ## 5. Public Interface
 
-Consumers import the core via `using It.D4np.Util;` (from the `It.D4np.Util` package). The core public surface:
+Consumers import the core via the layer namespaces — `using It.D4np.Util.Domain;` / `It.D4np.Util.Application;` / `It.D4np.Util.Infrastructure;` (all shipped in the `It.D4np.Util` package; the bare `It.D4np.Util` namespace holds only `LibraryVersion`). The core public surface:
 
 - `Entity<TId, TEntity>`, `AggregateRoot<TId, TAggregate>`, `ValueObject` — domain primitives.
 - `IDomainEvent` — domain-event marker (raised in the Domain layer).

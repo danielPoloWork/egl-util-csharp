@@ -90,7 +90,7 @@ For this repository:
 
 - `<lang>` = `csharp`, `<project>` = `util`
 - Namespace / package: **`It.D4np.Util`** — mirrors the path
-- Consumers import via: `using It.D4np.Util;`
+- Consumers import via the layer namespaces: `using It.D4np.Util.Domain;` / `.Application` / `.Infrastructure` — the root `It.D4np.Util` namespace holds only `LibraryVersion`
 
 Subdivision inside `util/` is by **component**, not by file type. **This layout
 is normative.** Do not place code at the repository root or in any other shape without
