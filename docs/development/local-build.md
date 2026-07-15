@@ -9,7 +9,7 @@ on Linux x64, Windows x64, macOS arm64 (.NET 8); reproducing them locally avoids
 - **Build system:** dotnet SDK (MSBuild), Directory.Build.props.
 - **Package manager:** NuGet (packages.lock.json committed; CI restores in locked mode — see below).
 - **Formatter / linter:** dotnet format / CSharpier, Roslyn analyzers + .editorconfig (warnings as errors).
-- **Docs:** DocFX (for the API docs build).
+- **Docs:** none needed — API docs are the XML-doc comments the build emits (`GenerateDocumentationFile`); narrative docs are Markdown under `docs/`.
 
 ## Commands
 

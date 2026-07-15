@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-15 — Docs: package-specific NuGet READMEs (#80) + drop the unimplemented DocFX claim (#83)](2026/07/2026-07-15-docs-nuget-readmes-and-drop-docfx-claim.md)
 - [2026-07-15 — Release: prepare v2.0.0](2026/07/2026-07-15-release-v2.0.0.md)
 - [2026-07-15 — Feat: opt-in per-key cache-stampede coalescing (#50)](2026/07/2026-07-15-feat-cache-stampede-coalescing.md)
 - [2026-07-15 — Fix: isolate event-handler construction failures in the broker (#89)](2026/07/2026-07-15-fix-eventbroker-construction-isolation.md)

@@ -22,7 +22,7 @@ is the source of truth.**
 - **Design patterns:** apply classical patterns where they fit; every adoption justified in
   an ADR + catalogued. Never force-fit. See §8.
 - **Quality bar:** enterprise — warnings-as-errors, `Roslyn analyzers + .editorconfig (warnings as errors)` clean, `dotnet format / CSharpier`
-  clean, Nullable reference types + Roslyn analyzers (soundness); dotnet-counters (leaks) green, `DocFX` documented, `consistency_lint.py` passing. No
+  clean, Nullable reference types + Roslyn analyzers (soundness); dotnet-counters (leaks) green, XML-doc comments (shipped in the package), `consistency_lint.py` passing. No
   shortcuts. See §10.
 - **Versioning & releases:** SemVer. Agents bump the version, roll `CHANGELOG.md`, draft
   release notes; the maintainer opens/merges the release PR and publishes. See §11.

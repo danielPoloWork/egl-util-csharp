@@ -217,7 +217,7 @@ value. Therefore:
 - **Namespace / package:** `It.D4np.Util`.
 - **Formatting:** enforced by `dotnet format / CSharpier` (config at the repo root).
 - **Static analysis:** enforced by `Roslyn analyzers + .editorconfig (warnings as errors)`; warnings-as-errors on the diff at CI.
-- **Documentation:** all public symbols documented with `DocFX`-compatible comments.
+- **Documentation:** all public symbols carry XML-doc comments, emitted via `GenerateDocumentationFile` and shipped in the NuGet package.
 - **Errors:** the spec's error model is honored at every boundary; all error paths covered
   by tests.
 
@@ -234,7 +234,7 @@ Every PR must clear, at minimum:
 | Unit tests | cover the new/changed behavior; pass on every CI cell |
 | Sanitizers / checkers | Nullable reference types + Roslyn analyzers (soundness); dotnet-counters (leaks) green where applicable |
 | Coverage | new code ≥ 80% line (finalized in an ADR) |
-| API docs | `DocFX` builds without warnings |
+| API docs | public symbols carry XML-doc comments; the `.xml` docs are generated (`GenerateDocumentationFile`) and shipped in the package |
 | Versioning | SemVer; `CHANGELOG.md` updated for user-visible changes |
 | Congruence | `python tools/consistency_lint.py` passes |
 
