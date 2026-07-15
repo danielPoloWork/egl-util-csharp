@@ -7,7 +7,7 @@ because the project is distributed via a package registry (`capabilities.packagi
 
 - **What ships:** the package produced by `dotnet SDK (MSBuild), Directory.Build.props` (and its contents — runtime only,
   no tests/benches).
-- **Consumers import it via:** `using It.D4np.Util;`.
+- **Consumers import it via:** the layer namespaces `using It.D4np.Util.Domain;` / `.Application` / `.Infrastructure` (the bare `It.D4np.Util` namespace holds only `LibraryVersion`).
 - **Metadata:** name, version (from `Version.cs`), license `MIT`, and the
   links a registry expects (repo, docs, changelog).
 
