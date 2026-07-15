@@ -215,4 +215,91 @@ public class SpecificationEvaluatorTests
         Assert.NotEmpty(result);
         Assert.All(result, product => Assert.NotNull(product.Category));
     }
+
+    // --- #70: criteria-only evaluation + ToPaginatedListAsync ---
+
+    private sealed class AllByPriceAscending : Specification<Product>
+    {
+        public AllByPriceAscending() => ApplyOrderBy(product => product.Price);
+    }
+
+    // No criteria, ordering, or paging — for the "paging needs an ordering" guard.
+    private sealed class AllUnordered : Specification<Product>;
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GetQuery_criteria_only_ignores_ordering_and_paging(bool useSqlite)
+    {
+        using var catalog = Catalog.Create(useSqlite);
+        SeedCatalog(catalog.Context); // 4 products
+
+        var paged = new PagedByPriceAscending(skip: 1, take: 2);
+
+        // Full evaluation applies the page (Take 2); criteria-only ignores paging and returns the whole set,
+        // so a repository can count the matching total for the same specification (#70).
+        Assert.Equal(2, SpecificationEvaluator.GetQuery(catalog.Context.Products, paged).ToList().Count);
+        Assert.Equal(
+            4,
+            SpecificationEvaluator.GetQuery(catalog.Context.Products, paged, evaluateCriteriaOnly: true).ToList().Count);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ToPaginatedListAsync_returns_the_page_and_the_full_total(bool useSqlite)
+    {
+        using var catalog = Catalog.Create(useSqlite);
+        SeedCatalog(catalog.Context); // 4 products, prices 10/15/20/30
+
+        PaginatedList<Product> page1 = await SpecificationEvaluator.ToPaginatedListAsync(
+            catalog.Context.Products, new AllByPriceAscending(), pageIndex: 1, pageSize: 2);
+
+        Assert.Equal(2, page1.Items.Count);
+        Assert.Equal(4, page1.TotalCount); // the full match count, NOT the page size (#70)
+        Assert.Equal(2, page1.TotalPages);
+        Assert.True(page1.HasNext);
+        Assert.False(page1.HasPrevious);
+        Assert.Equal(new[] { 10, 15 }, page1.Items.Select(product => product.Price)); // ascending page 1
+
+        PaginatedList<Product> page2 = await SpecificationEvaluator.ToPaginatedListAsync(
+            catalog.Context.Products, new AllByPriceAscending(), pageIndex: 2, pageSize: 2);
+
+        Assert.Equal(new[] { 20, 30 }, page2.Items.Select(product => product.Price)); // ascending page 2
+        Assert.True(page2.HasPrevious);
+        Assert.False(page2.HasNext);
+    }
+
+    [Fact]
+    public async Task ToPaginatedListAsync_rejects_a_specification_that_enables_paging()
+    {
+        using var catalog = Catalog.Create(useSqlite: false);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            SpecificationEvaluator.ToPaginatedListAsync(
+                catalog.Context.Products, new PagedByPriceAscending(0, 2), pageIndex: 1, pageSize: 2));
+    }
+
+    [Fact]
+    public async Task ToPaginatedListAsync_rejects_an_unordered_specification()
+    {
+        using var catalog = Catalog.Create(useSqlite: false);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            SpecificationEvaluator.ToPaginatedListAsync(
+                catalog.Context.Products, new AllUnordered(), pageIndex: 1, pageSize: 2));
+    }
+
+    [Fact]
+    public async Task ToPaginatedListAsync_rejects_a_non_positive_page_or_size()
+    {
+        using var catalog = Catalog.Create(useSqlite: false);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            SpecificationEvaluator.ToPaginatedListAsync(
+                catalog.Context.Products, new AllByPriceAscending(), pageIndex: 0, pageSize: 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            SpecificationEvaluator.ToPaginatedListAsync(
+                catalog.Context.Products, new AllByPriceAscending(), pageIndex: 1, pageSize: 0));
+    }
 }

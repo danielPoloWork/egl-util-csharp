@@ -12,6 +12,17 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `PaginatedList<T>` is now reachable through the library's abstractions (#70, ADR-0035). It required a
+  `totalCount` but nothing produced one: `SpecificationEvaluator.GetQuery` always applied `Skip`/`Take` (no
+  criteria-only mode), so counting a paged query gave the page size, not the match count, and the doc
+  ("ready to enumerate or count") was misleading. Added `GetQuery(source, spec, evaluateCriteriaOnly)` (the
+  criteria-only overload — skips includes/ordering/paging to count the full matching set) and
+  `SpecificationEvaluator.ToPaginatedListAsync(source, spec, pageIndex, pageSize, ct)` (counts the full set,
+  materializes the requested 1-based page, returns a `PaginatedList<T>`; it owns the paging, so the spec
+  supplies the filter and a required ordering but must not enable its own paging — both guarded). Fixed the
+  misleading `GetQuery` `<returns>` doc. Additive (accrues toward the next MINOR); `IRepository` is
+  intentionally unchanged (a repository composes paging by calling `ToPaginatedListAsync`) — repository-level
+  count/paged members are deferred to 2.0 as they would break implementers.
 - `Result`/`Result<TValue>` gain functional combinators and non-throwing access (#69, ADR-0034). The model
   was branded "functional, exception-free" but exposed only `IsSuccess`/`IsFailure`/`Errors`/`Error` plus a
   `Value` getter that **throws** on failure — no composition and no safe value access. Added (sync,
