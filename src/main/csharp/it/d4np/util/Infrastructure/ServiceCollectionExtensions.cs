@@ -26,8 +26,9 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Registered as singletons (overridable — see below): <see cref="IDateTimeProvider"/>
-    /// → <see cref="DateTimeProvider"/>, <see cref="IPasswordHasher"/> → <see cref="PasswordHasher"/>,
+    /// Registered as singletons (overridable — see below): <see cref="TimeProvider.System"/> (the BCL
+    /// clock), <see cref="IDateTimeProvider"/> → <see cref="DateTimeProvider"/> (which delegates to that
+    /// <see cref="TimeProvider"/>), <see cref="IPasswordHasher"/> → <see cref="PasswordHasher"/>,
     /// <see cref="ICacheService"/> → <see cref="CacheService"/>, and <see cref="IEventBroker"/> →
     /// <see cref="EventBroker"/> (the same instance also runs as an <c>IHostedService</c>). The
     /// <see cref="ValidationPipelineBehavior{TRequest, TResponse}"/> is registered as an open-generic
@@ -86,6 +87,9 @@ public static class ServiceCollectionExtensions
 
         Assembly[] toScan = assemblies.Length > 0 ? assemblies : [Assembly.GetCallingAssembly()];
 
+        // Register the BCL clock (TimeProvider.System) so consumers can inject TimeProvider directly, and
+        // the default DateTimeProvider (below) delegates to the same instance — both clocks agree (#97).
+        services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.TryAddSingleton<IPasswordHasher, PasswordHasher>();
         services.TryAddSingleton<ICacheService, CacheService>();

@@ -12,6 +12,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- The clock now bridges to the BCL `System.TimeProvider` (#97, ADR-0036). `AddD4npUtil` registers
+  `TimeProvider.System`, and the default `DateTimeProvider` takes an optional `TimeProvider`
+  (`DateTimeProvider(TimeProvider? = null)`, falling back to `TimeProvider.System`) and computes `UtcNow`
+  from it — so a consumer can inject `System.TimeProvider` directly (and use `FakeTimeProvider` in tests)
+  and both it and `IDateTimeProvider` observe the same clock. `IDateTimeProvider` is documented as a thin
+  facade; new code needing `DateTimeOffset`/timestamps/timers should prefer `TimeProvider`. Non-breaking
+  (`new DateTimeProvider()` still works, the `IDateTimeProvider` surface is unchanged); obsoleting
+  `IDateTimeProvider` toward `TimeProvider` is left to 2.0.
 - `PaginatedList<T>` is now reachable through the library's abstractions (#70, ADR-0035). It required a
   `totalCount` but nothing produced one: `SpecificationEvaluator.GetQuery` always applied `Skip`/`Take` (no
   criteria-only mode), so counting a paged query gave the page size, not the match count, and the doc

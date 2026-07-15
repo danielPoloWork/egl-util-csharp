@@ -31,7 +31,7 @@ egl-util-csharp is a NuGet utility library of strongly-typed, immutable, extensi
 - `ValidationPipelineBehavior<TRequest, TResponse>` — MediatR pipeline behavior running all FluentValidation validators and short-circuiting on failure.
 - `ICacheService` — two-level (in-memory + distributed/Redis) cache abstraction with `GetOrCreateAsync`, TTL, and key-based invalidation.
 - `DistributedCacheExtensions` — typed get/set over `IDistributedCache` using compact System.Text.Json serialization.
-- `IDateTimeProvider` / `DateTimeProvider` — injectable abstraction over `DateTime.UtcNow` to make system time deterministic in tests.
+- `IDateTimeProvider` / `DateTimeProvider` — injectable abstraction over the system clock (UtcNow) to make time deterministic in tests; on .NET 8+ the default delegates to `System.TimeProvider` (`TimeProvider.System` is registered alongside), a thin facade over the BCL clock (ADR-0036).
 - `ServiceCollectionExtensions` — assembly-scanning auto-registration of handlers and validators into `IServiceCollection` (specifications are query objects constructed with their runtime arguments, not auto-registered — ADR-0019).
 - `PaginatedList<T>` — encapsulates a page of results with `Items`, `PageIndex`, `TotalCount`, `TotalPages`, `HasNext`/`HasPrevious`.
 
