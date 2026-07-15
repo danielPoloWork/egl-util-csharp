@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Opt-in MediatR + FluentValidation building blocks (#38, ADR-0037), kept OUT of the core It.D4np.Util
+    package so a DDD/Result-only consumer takes neither dependency. This package depends on It.D4np.Util
+    (the core) plus MediatR and FluentValidation, and provides the DomainEventNotification MediatR adapter
+    and the FluentValidation ValidationPipelineBehavior.
+
+    It references the core packable project (Infrastructure) for the It.D4np.Util package dependency, and
+    Domain privately (PrivateAssets=all) only to compile against IDomainEvent — Domain's assembly ships in
+    the It.D4np.Util package, so it is neither re-bundled nor declared as a dependency here.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Infrastructure\It.D4np.Util.Infrastructure.csproj" />
+    <ProjectReference Include="..\Domain\It.D4np.Util.Domain.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="MediatR" Version="12.5.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Opt-in MediatR + FluentValidation building blocks for egl-util-csharp.</Description>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata. Depends on It.D4np.Util (core), MediatR, and FluentValidation; the core
+       package imposes none of these. -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>It.D4np.Util.MediatR</PackageId>
+    <Authors>Daniel Polo</Authors>
+    <Product>egl-util-csharp</Product>
+    <PackageDescription>Opt-in MediatR + FluentValidation building blocks for It.D4np.Util: the DomainEventNotification adapter (domain events to MediatR notifications) and the FluentValidation ValidationPipelineBehavior. Depends on It.D4np.Util, MediatR, and FluentValidation; the core package imposes neither.</PackageDescription>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2026 Daniel Polo</Copyright>
+    <PackageProjectUrl>https://github.com/danielPoloWork/egl-util-csharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/danielPoloWork/egl-util-csharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>ddd;cqrs;mediatr;fluentvalidation;validation;domain-events;dotnet</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(RepoRoot)README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

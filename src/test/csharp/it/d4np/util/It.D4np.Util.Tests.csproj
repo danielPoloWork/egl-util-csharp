@@ -42,6 +42,7 @@
     <ProjectReference Include="..\..\..\..\..\main\csharp\it\d4np\util\Domain\It.D4np.Util.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\..\main\csharp\it\d4np\util\Application\It.D4np.Util.Application.csproj" />
     <ProjectReference Include="..\..\..\..\..\main\csharp\it\d4np\util\Infrastructure\It.D4np.Util.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\..\main\csharp\it\d4np\util\MediatR\It.D4np.Util.MediatR.csproj" />
   </ItemGroup>
 
 </Project>

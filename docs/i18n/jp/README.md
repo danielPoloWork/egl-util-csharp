@@ -22,10 +22,16 @@ egl-util-csharp は、ドメイン駆動設計 (DDD)、クリーンアーキテ�
 
 ## インストール
 
-本ライブラリは、ドメイン層・アプリケーション層・インフラストラクチャ層をまとめた単一の NuGet パッケージとして提供されます。
+コアは、ドメイン層・アプリケーション層・インフラストラクチャ層をまとめた単一の NuGet パッケージとして提供され、**MediatR や FluentValidation には依存しません**。
 
 ```bash
 dotnet add package It.D4np.Util
+```
+
+MediatR/FluentValidation 連携 — `DomainEventNotification` アダプターと FluentValidation の `ValidationPipelineBehavior` — は**オプトイン**パッケージです。それらを使う場合にのみ追加してください。
+
+```bash
+dotnet add package It.D4np.Util.MediatR
 ```
 
 ## クイックスタート
@@ -41,12 +47,22 @@ public Result<User> Register(string email) =>
         : Result.Success(new User(Guid.NewGuid(), email));
 ```
 
-1 回の呼び出しで依存性注入を構成します。構成要素を登録し、イベントハンドラー・FluentValidation バリデーターをアセンブリスキャンで登録します：
+1 回の呼び出しで依存性注入を構成します。構成要素を登録し、イベントハンドラーをアセンブリスキャンで登録します：
 
 ```csharp
 using It.D4np.Util.Infrastructure;
 
 services.AddD4npUtil(typeof(Program).Assembly);
+```
+
+オプトインの `It.D4np.Util.MediatR` パッケージを使う場合は、その FluentValidation パイプライン動作とバリデータースキャンも合わせて構成します：
+
+```csharp
+using It.D4np.Util.Infrastructure;
+using It.D4np.Util.MediatR;
+
+services.AddD4npUtil(typeof(Program).Assembly)          // コアサービス + イベントハンドラースキャン
+        .AddD4npUtilMediatR(typeof(Program).Assembly);  // + MediatR バリデーション動作とバリデータースキャン
 ```
 
 ## ビルドとテスト

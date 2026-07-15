@@ -2,12 +2,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
-using FluentValidation;
-
 using It.D4np.Util.Application;
+using It.D4np.Util.Domain;
 using It.D4np.Util.Infrastructure;
-
-using MediatR;
 
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
@@ -26,13 +23,6 @@ public class ServiceCollectionExtensionsTests
     {
         public Task HandleAsync(SampleEvent @event, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
-    }
-
-    private sealed record SampleRequest(string Value) : IRequest<string>;
-
-    private sealed class SampleValidator : AbstractValidator<SampleRequest>
-    {
-        public SampleValidator() => RuleFor(request => request.Value).NotEmpty();
     }
 
     private sealed class SampleEntity;
@@ -57,18 +47,16 @@ public class ServiceCollectionExtensionsTests
         public ParameterizedSpecification(Guid customerId) => _ = customerId;
     }
 
-    // Open-generic implementors in the scanned assembly. Regression for #65: the scan must skip these.
-    // GetInterfaces() on the open definition yields the open constructed interface (e.g.
-    // IEventHandler<TEvent>), and registering the definition against it makes BuildServiceProvider throw
-    // "Cannot instantiate implementation type …" for the whole container — regardless of ValidateOnBuild.
+    // An open-generic handler in the scanned assembly. Regression for #65: the scan must skip it.
+    // GetInterfaces() on the open definition yields the open constructed interface (IEventHandler<TEvent>),
+    // and registering the definition against it makes BuildServiceProvider throw "Cannot instantiate
+    // implementation type …" for the whole container — regardless of ValidateOnBuild.
     private sealed class OpenGenericEventHandler<TEvent> : IEventHandler<TEvent>
         where TEvent : class
     {
         public Task HandleAsync(TEvent @event, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
-
-    private sealed class OpenGenericValidator<T> : AbstractValidator<T>;
 
     // A stand-in IEventBroker a consumer might register to replace the default broker (#92).
     private sealed class CustomBroker : IEventBroker
@@ -174,27 +162,6 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void Registering_twice_leaves_a_single_validation_behavior()
-    {
-        // Regression for #32: the open-generic pipeline behavior must be registered idempotently, or a
-        // second AddD4npUtil call (library + host) makes MediatR run every validator twice per request.
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions()));
-        services.AddSingleton<IDistributedCache>(
-            new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions())));
-
-        services.AddD4npUtil(typeof(ServiceCollectionExtensionsTests).Assembly);
-        services.AddD4npUtil(typeof(ServiceCollectionExtensionsTests).Assembly); // idempotent
-
-        int behaviors = services.Count(descriptor =>
-            descriptor.ServiceType == typeof(IPipelineBehavior<,>)
-            && descriptor.ImplementationType == typeof(ValidationPipelineBehavior<,>));
-
-        Assert.Equal(1, behaviors); // registered once despite two calls, so validators run once
-    }
-
-    [Fact]
     public async Task Registers_the_BCL_TimeProvider()
     {
         // #97: AddD4npUtil registers TimeProvider.System so consumers can inject TimeProvider directly, and
@@ -216,23 +183,11 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public async Task Registers_the_validation_pipeline_behavior()
-    {
-        await using ServiceProvider provider = BuildProvider();
-
-        IEnumerable<IPipelineBehavior<SampleRequest, string>> behaviors =
-            provider.GetServices<IPipelineBehavior<SampleRequest, string>>();
-
-        Assert.Contains(behaviors, behavior => behavior is ValidationPipelineBehavior<SampleRequest, string>);
-    }
-
-    [Fact]
-    public async Task Auto_registers_scanned_handlers_and_validators()
+    public async Task Auto_registers_scanned_handlers()
     {
         await using ServiceProvider provider = BuildProvider();
 
         Assert.IsType<SampleEventHandler>(Assert.Single(provider.GetServices<IEventHandler<SampleEvent>>()));
-        Assert.Contains(provider.GetServices<IValidator<SampleRequest>>(), validator => validator is SampleValidator);
     }
 
     [Fact]
@@ -251,7 +206,6 @@ public class ServiceCollectionExtensionsTests
 
         await using ServiceProvider provider = services.BuildServiceProvider();
         Assert.IsType<SampleEventHandler>(Assert.Single(provider.GetServices<IEventHandler<SampleEvent>>()));
-        Assert.Contains(provider.GetServices<IValidator<SampleRequest>>(), validator => validator is SampleValidator);
     }
 
     [Fact]
@@ -283,10 +237,11 @@ public class ServiceCollectionExtensionsTests
     [Fact]
     public async Task Open_generic_implementors_are_skipped_so_the_container_builds()
     {
-        // Regression for #65: this assembly defines OpenGenericEventHandler<TEvent> and
-        // OpenGenericValidator<T>. Before the fix the scan registered each open definition against its
-        // open constructed interface, so BuildServiceProvider threw "Cannot instantiate implementation
-        // type …" and the entire application container failed to build. They must be skipped instead.
+        // Regression for #65: this assembly defines OpenGenericEventHandler<TEvent>. Before the fix the scan
+        // registered the open definition against its open constructed interface, so BuildServiceProvider
+        // threw "Cannot instantiate implementation type …" and the entire application container failed to
+        // build. It must be skipped instead. (The opt-in MediatR package covers the same skip for
+        // open-generic validators — see MediatRServiceCollectionExtensionsTests.)
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions()));
@@ -295,9 +250,8 @@ public class ServiceCollectionExtensionsTests
 
         services.AddD4npUtil(typeof(ServiceCollectionExtensionsTests).Assembly);
 
-        // The open generics were not registered at all.
+        // The open generic was not registered at all.
         Assert.DoesNotContain(services, descriptor => descriptor.ImplementationType == typeof(OpenGenericEventHandler<>));
-        Assert.DoesNotContain(services, descriptor => descriptor.ImplementationType == typeof(OpenGenericValidator<>));
 
         // The container builds (pre-fix this threw) and the ordinary closed handler still resolves.
         await using ServiceProvider provider = services.BuildServiceProvider();
@@ -341,5 +295,30 @@ public class ServiceCollectionExtensionsTests
         MethodInfo addD4npUtil =
             typeof(It.D4np.Util.Infrastructure.ServiceCollectionExtensions).GetMethod("AddD4npUtil")!;
         Assert.True(addD4npUtil.MethodImplementationFlags.HasFlag(MethodImplAttributes.NoInlining));
+    }
+
+    [Theory]
+    [InlineData("MediatR")]
+    [InlineData("FluentValidation")]
+    public void The_core_assemblies_carry_no_MediatR_or_FluentValidation_reference(string forbiddenDependency)
+    {
+        // #38: the MediatR notification adapter and the FluentValidation pipeline behavior moved to the
+        // opt-in It.D4np.Util.MediatR package, so none of the three assemblies bundled in the core
+        // It.D4np.Util package — Domain, Application, Infrastructure — may reference MediatR or
+        // FluentValidation. Non-vacuous: before the split, both Application and Infrastructure referenced
+        // each directly, so their compiled metadata carried the reference this asserts is now absent.
+        Assembly[] coreAssemblies =
+        [
+            typeof(IDomainEvent).Assembly,                                     // It.D4np.Util.Domain
+            typeof(IDateTimeProvider).Assembly,                               // It.D4np.Util.Application
+            typeof(It.D4np.Util.Infrastructure.ServiceCollectionExtensions).Assembly, // It.D4np.Util.Infrastructure
+        ];
+
+        foreach (Assembly assembly in coreAssemblies)
+        {
+            Assert.DoesNotContain(
+                assembly.GetReferencedAssemblies(),
+                reference => string.Equals(reference.Name, forbiddenDependency, StringComparison.Ordinal));
+        }
     }
 }

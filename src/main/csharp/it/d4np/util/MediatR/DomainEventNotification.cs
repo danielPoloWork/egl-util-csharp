@@ -2,18 +2,18 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
+// global:: — the containing namespace It.D4np.Util.MediatR would otherwise shadow the MediatR package.
+using global::MediatR;
 
 using It.D4np.Util.Domain;
 
-using MediatR;
-
-namespace It.D4np.Util.Application;
+namespace It.D4np.Util.MediatR;
 
 /// <summary>
 /// Adapts a domain event to a MediatR <see cref="INotification"/> so it can be published through
 /// the application's notification pipeline to any number of registered handlers. This keeps the
 /// domain layer (which only raises <see cref="IDomainEvent"/>s) decoupled from the messaging
-/// infrastructure.
+/// infrastructure. Part of the opt-in <c>It.D4np.Util.MediatR</c> package (#38).
 /// </summary>
 /// <typeparam name="TEvent">The wrapped domain-event type.</typeparam>
 public sealed class DomainEventNotification<TEvent> : INotification

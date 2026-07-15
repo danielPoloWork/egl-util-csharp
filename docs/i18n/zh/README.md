@@ -22,10 +22,16 @@ egl-util-csharp 是一个 NuGet 工具类库，为采用领域驱动设计（DDD
 
 ## 安装
 
-该类库以单个 NuGet 包发布，捆绑了领域层、应用层和基础设施层：
+核心以单个 NuGet 包发布，捆绑了领域层、应用层和基础设施层，且**不依赖 MediatR 或 FluentValidation**：
 
 ```bash
 dotnet add package It.D4np.Util
+```
+
+MediatR/FluentValidation 集成——即 `DomainEventNotification` 适配器与 FluentValidation 的 `ValidationPipelineBehavior`——是一个**可选**包。仅在你使用它们时才添加：
+
+```bash
+dotnet add package It.D4np.Util.MediatR
 ```
 
 ## 快速开始
@@ -41,12 +47,22 @@ public Result<User> Register(string email) =>
         : Result.Success(new User(Guid.NewGuid(), email));
 ```
 
-一次调用即可完成依赖注入装配——注册这些构建块，并通过程序集扫描注册你的事件处理器与 FluentValidation 验证器：
+一次调用即可完成依赖注入装配——注册这些构建块，并通过程序集扫描注册你的事件处理器：
 
 ```csharp
 using It.D4np.Util.Infrastructure;
 
 services.AddD4npUtil(typeof(Program).Assembly);
+```
+
+若使用可选的 `It.D4np.Util.MediatR` 包，请一并装配其 FluentValidation 管道行为与验证器扫描：
+
+```csharp
+using It.D4np.Util.Infrastructure;
+using It.D4np.Util.MediatR;
+
+services.AddD4npUtil(typeof(Program).Assembly)          // 核心服务 + 事件处理器扫描
+        .AddD4npUtilMediatR(typeof(Program).Assembly);  // + MediatR 验证行为与验证器扫描
 ```
 
 ## 构建与测试

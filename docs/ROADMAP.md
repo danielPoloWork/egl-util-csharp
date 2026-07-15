@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-15 — feat: bridge IDateTimeProvider to the BCL TimeProvider (#97)](journal/2026/07/2026-07-15-feat-timeprovider-interop.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-15 — refactor: split the MediatR/FluentValidation blocks into the opt-in It.D4np.Util.MediatR package (#38)](journal/2026/07/2026-07-15-refactor-split-mediatr-package.md).
 
 ---
 

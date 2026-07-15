@@ -1,7 +1,8 @@
-using It.D4np.Util.Application;
-using It.D4np.Util.Domain;
+// global:: — It.D4np.Util.MediatR shadows the MediatR package from under the It.D4np.Util.* namespace tree.
+using global::MediatR;
 
-using MediatR;
+using It.D4np.Util.Domain;
+using It.D4np.Util.MediatR;
 
 using Microsoft.Extensions.DependencyInjection;
 
