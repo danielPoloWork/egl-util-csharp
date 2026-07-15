@@ -14,9 +14,10 @@ namespace It.D4np.Util.Infrastructure;
 /// <para>
 /// On a read, L1 is checked first, then L2 (a hit there re-populates L1); a miss invokes the factory
 /// and writes both levels. Presence in L2 is decided from the stored bytes, not the deserialised
-/// value, so a cached <c>default(T)</c> is not mistaken for a miss. This implementation does not
-/// serialise concurrent misses for the same key, so under contention the factory may run more than
-/// once per key (last write wins).
+/// value, so a cached <c>default(T)</c> is not mistaken for a miss. By default this implementation does
+/// not serialise concurrent misses for the same key, so under contention the factory may run more than
+/// once per key (last write wins); construct it with <c>coalesceConcurrentMisses: true</c> to gate
+/// concurrent misses per key so the factory runs at most once per key per node (#50, ADR-0039).
 /// </para>
 /// <para>
 /// <b>Promotion restarts the TTL.</b> When an L2 hit re-populates L1, the entry is written with the
@@ -59,17 +60,41 @@ public sealed class CacheService : ICacheService
 {
     private readonly IMemoryCache _memoryCache;
     private readonly IDistributedCache _distributedCache;
+    private readonly bool _coalesceConcurrentMisses;
+
+    // Per-key gates for opt-in coalescing (#50). Ref-counted: an entry is created on first use for a key and
+    // removed when its last waiter leaves, so an unbounded key space does not leak SemaphoreSlims. Guarded by
+    // locking the dictionary. Never touched when coalescing is disabled (the fast path returns first).
+    private readonly Dictionary<string, KeyGate> _gates = new(StringComparer.Ordinal);
 
     /// <summary>Creates a two-level cache over the given in-memory and distributed caches.</summary>
     /// <param name="memoryCache">The L1 in-memory cache.</param>
     /// <param name="distributedCache">The L2 distributed cache.</param>
     /// <exception cref="ArgumentNullException">Either cache is <see langword="null"/>.</exception>
     public CacheService(IMemoryCache memoryCache, IDistributedCache distributedCache)
+        : this(memoryCache, distributedCache, coalesceConcurrentMisses: false)
+    {
+    }
+
+    /// <summary>Creates a two-level cache, optionally coalescing concurrent misses for the same key.</summary>
+    /// <param name="memoryCache">The L1 in-memory cache.</param>
+    /// <param name="distributedCache">The L2 distributed cache.</param>
+    /// <param name="coalesceConcurrentMisses">
+    /// When <see langword="true"/>, concurrent <see cref="GetOrCreateAsync"/> calls that miss for the same key
+    /// are serialised behind a per-key gate so the factory runs at most once per key per node — the others
+    /// await and return the winner's value. The default <see langword="false"/> keeps the lock-free behaviour
+    /// where each concurrent miss runs the factory (last write wins). Opt in when the factory is expensive and
+    /// concurrent misses are likely (#50, ADR-0039). The gate is per-instance and per-node; it does not
+    /// coordinate across processes.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Either cache is <see langword="null"/>.</exception>
+    public CacheService(IMemoryCache memoryCache, IDistributedCache distributedCache, bool coalesceConcurrentMisses)
     {
         ArgumentNullException.ThrowIfNull(memoryCache);
         ArgumentNullException.ThrowIfNull(distributedCache);
         _memoryCache = memoryCache;
         _distributedCache = distributedCache;
+        _coalesceConcurrentMisses = coalesceConcurrentMisses;
     }
 
     /// <inheritdoc />
@@ -111,6 +136,50 @@ public sealed class CacheService : ICacheService
             return cached;
         }
 
+        // Fast path (the default): resolve the miss without serialising concurrent callers — under
+        // contention the factory may run more than once per key (last write wins), the documented trade-off.
+        if (!_coalesceConcurrentMisses)
+        {
+            return await ResolveOnMissAsync(key, factory, ttl, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Opt-in coalescing (#50, ADR-0039): serialise concurrent misses for the same key behind a per-key
+        // gate so at most one factory runs per key per node. A waiter re-checks L1 after the gate (the winner
+        // populates it) and ResolveOnMissAsync re-checks L2, so a blocked caller returns the winner's value
+        // rather than running the factory again. The gate is ref-counted and removed when its last waiter
+        // leaves, so an unbounded key space does not leak semaphores.
+        KeyGate gate = RentGate(key);
+        var acquired = false;
+        try
+        {
+            await gate.Semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            acquired = true;
+
+            // Double-checked: the caller that just held the gate may have populated L1.
+            if (_memoryCache.TryGetValue(key, out T? promoted))
+            {
+                return promoted;
+            }
+
+            return await ResolveOnMissAsync(key, factory, ttl, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (acquired)
+            {
+                gate.Semaphore.Release();
+            }
+
+            ReturnGate(key, gate);
+        }
+    }
+
+    // The miss path shared by the fast and coalesced routes: check L2, else run the factory and write both
+    // levels (a null result is returned but not cached). Under coalescing this runs inside the per-key gate,
+    // so its L2 check catches a value a concurrent winner just wrote and the factory runs at most once.
+    private async ValueTask<T?> ResolveOnMissAsync<T>(
+        string key, Func<CancellationToken, Task<T>> factory, TimeSpan? ttl, CancellationToken cancellationToken)
+    {
         // L2 — distributed. Decide presence from the raw bytes, then deserialise.
         byte[]? bytes = await _distributedCache.GetAsync(key, cancellationToken).ConfigureAwait(false);
         if (bytes is { Length: > 0 })
@@ -192,4 +261,46 @@ public sealed class CacheService : ICacheService
         ttl is { } expiration
             ? new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = expiration }
             : new DistributedCacheEntryOptions();
+
+    // Rents the per-key gate (opt-in coalescing), creating it on first use and incrementing its waiter count
+    // under the lock so it cannot be removed/disposed while in use. Must be paired with ReturnGate in a finally.
+    private KeyGate RentGate(string key)
+    {
+        lock (_gates)
+        {
+            if (!_gates.TryGetValue(key, out KeyGate? gate))
+            {
+                gate = new KeyGate();
+                _gates[key] = gate;
+            }
+
+            gate.Waiters++;
+            return gate;
+        }
+    }
+
+    // Returns the gate; when its last waiter leaves, the entry is removed and its semaphore disposed so a
+    // one-shot key does not leak. Waiters is guarded here and stays > 0 while any renter holds a reference,
+    // so no disposal races with a concurrent WaitAsync on the same gate.
+    private void ReturnGate(string key, KeyGate gate)
+    {
+        lock (_gates)
+        {
+            if (--gate.Waiters == 0)
+            {
+                _gates.Remove(key);
+                gate.Dispose();
+            }
+        }
+    }
+
+    // A per-key coalescing gate: a binary semaphore plus a waiter count (guarded by the _gates lock).
+    private sealed class KeyGate : IDisposable
+    {
+        public SemaphoreSlim Semaphore { get; } = new(1, 1);
+
+        public int Waiters { get; set; }
+
+        public void Dispose() => Semaphore.Dispose();
+    }
 }
