@@ -8,7 +8,7 @@ namespace It.D4np.Util.Domain;
 /// Reading <see cref="Value"/> on a failed result throws.
 /// </summary>
 /// <typeparam name="TValue">The success value type.</typeparam>
-public class Result<TValue> : Result
+public sealed class Result<TValue> : Result
 {
     private readonly TValue _value;
 
