@@ -19,6 +19,15 @@ namespace It.D4np.Util.Infrastructure;
 /// once per key (last write wins).
 /// </para>
 /// <para>
+/// <b>Promotion restarts the TTL.</b> When an L2 hit re-populates L1, the entry is written with the
+/// <em>current</em> call's <c>ttl</c> restarted from now — not the original writer's remaining lifetime.
+/// So a value read from L2 just before it expires lives another full <c>ttl</c> window in that node's L1,
+/// making the effective per-node staleness bound approach <b>~2× ttl</b>; and when callers pass different
+/// ttls for the same key, the promoted L1 lifetime is whichever the <em>promoting</em> caller used. Choose
+/// a <c>ttl</c> that accounts for this doubled bound where freshness matters. Distinct from the cross-node
+/// staleness below (#42); see ADR-0009.
+/// </para>
+/// <para>
 /// Every L1 entry is written with an explicit <see cref="MemoryCacheEntryOptions.Size"/> of one unit,
 /// so the service works whether or not the supplied <see cref="IMemoryCache"/> was registered with a
 /// <c>SizeLimit</c> (a size-limited cache requires a per-entry size, an unlimited one ignores it).
