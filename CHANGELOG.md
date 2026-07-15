@@ -12,6 +12,16 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `Result`/`Result<TValue>` gain functional combinators and non-throwing access (#69, ADR-0034). The model
+  was branded "functional, exception-free" but exposed only `IsSuccess`/`IsFailure`/`Errors`/`Error` plus a
+  `Value` getter that **throws** on failure — no composition and no safe value access. Added (sync,
+  additive): `Result<TValue>.Match`/`Map`/`Bind` (compose the success value; `Map`/`Bind` propagate the
+  errors unchanged on failure and run the delegate only on success), `GetValueOrDefault()` /
+  `GetValueOrDefault(fallback)` / `TryGetValue(out value)` (never throw), and `Result.Match` (fold without a
+  value). `Map` still upholds the no-null invariant (a map returning null fails the `Success` guard). Instance
+  members in the Domain assembly; existing code is unaffected (accrues toward the next MINOR). Side-effect
+  combinators (`Tap`/`OnSuccess`/`OnFailure`), a typed `Combine<T>`, and `async` overloads are intentionally
+  out of scope for now.
 - `ISpecification<TEntity>` gains predicate composition: `And`/`Or`/`Not` combinators + `IsSatisfiedBy`
   (#68, ADR-0033). The pattern advertised composability but had none — `Criteria` was a single
   constructor-set predicate. `And`/`Or`/`Not` now return a new specification whose `Criteria` is the

@@ -49,3 +49,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0031](0031-supply-chain-sast-and-sbom.md) | Adopt CodeQL, dependency review, and a CycloneDX SBOM | Accepted |
 | [0032](0032-enforce-the-analyzer-gate.md) | Make the Roslyn analyzer gate real (AnalysisMode + EnforceCodeStyleInBuild) | Accepted |
 | [0033](0033-specification-predicate-combinators.md) | Add And/Or/Not predicate combinators (and IsSatisfiedBy) to ISpecification | Accepted |
+| [0034](0034-result-functional-combinators.md) | Add functional combinators and non-throwing access to Result | Accepted |
