@@ -34,7 +34,11 @@ public interface ICacheService
     /// <param name="ttl">
     /// How long the entry stays valid; must be a <b>strictly positive</b> duration when specified.
     /// <see langword="null"/> means no explicit expiration (the entry lives until evicted by the
-    /// underlying caches).
+    /// underlying caches). Note the per-node staleness bound can approach <b>~2× <paramref name="ttl"/></b>:
+    /// on an L2 hit the value is promoted into that node's in-memory L1 with the ttl <b>restarted from now</b>
+    /// using the <em>promoting</em> call's ttl (not the original writer's), so an entry read just before its
+    /// L2 expiry can live another full ttl window in L1 (see the built-in <c>CacheService</c> remarks and
+    /// ADR-0009).
     /// </param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>The cached or freshly created value; may be <see langword="null"/> if the factory returned <see langword="null"/>.</returns>

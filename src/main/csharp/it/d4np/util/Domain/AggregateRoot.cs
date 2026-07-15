@@ -38,6 +38,18 @@ public abstract class AggregateRoot<TId, TAggregate> : Entity<TId, TAggregate>, 
     /// <summary>
     /// The domain events raised on this aggregate and not yet dispatched, in the order raised.
     /// </summary>
+    /// <remarks>
+    /// This is a <b>live read-only view</b> over the internal buffer, not a snapshot: it reflects later
+    /// <see cref="RaiseDomainEvent"/> calls and is emptied by <see cref="ClearDomainEvents"/>. Two consequences
+    /// for a single-threaded caller: a reference captured <em>before</em> dispatch (for an audit trail,
+    /// logging, or assertions) reads back <b>empty</b> once the dispatcher clears the aggregate — it was never
+    /// a snapshot; and enumerating it directly in a dispatch loop that lets a handler raise a follow-up event
+    /// on the same aggregate throws <see cref="InvalidOperationException"/> ("Collection was modified").
+    /// <b>Materialize a copy</b> (<c>ToArray()</c>/<c>ToList()</c>) before a dispatch loop or before retaining
+    /// the events; the library's own <c>DispatchDomainEventsAsync</c> does exactly that. (Distinct from the
+    /// threading contract in the type remarks; both concern single-thread use.) Each access also allocates a
+    /// fresh read-only wrapper.
+    /// </remarks>
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
     /// <summary>Records a domain event to be dispatched after the aggregate is persisted.</summary>

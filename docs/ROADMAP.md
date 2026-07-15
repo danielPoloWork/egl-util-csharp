@@ -5,7 +5,7 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning:** **v1.0.0 released** — the public API is frozen under SemVer (ADR-0010).
-- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-15 — docs: correct the frozen spec's Result/Error layer + consumer import namespaces (#78, #79)](journal/2026/07/2026-07-15-docs-spec-import-ns-and-result-layer.md).
+- **Session journal:** see [`docs/journal/`](journal/). Latest checkpoint: [2026-07-15 — docs: DomainEvents live-view + cache promotion-TTL (~2×ttl) caveats (#87, #93)](journal/2026/07/2026-07-15-docs-domainevents-view-and-cache-ttl-caveats.md).
 
 ---
 
