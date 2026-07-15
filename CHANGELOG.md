@@ -12,6 +12,17 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `CacheService` gains **opt-in** per-key coalescing for concurrent cache misses (#50, ADR-0039). By default
+  concurrent `GetOrCreateAsync` calls that miss for the same key each run the factory (last write wins) — the
+  lock-free trade-off documented in ADR-0009. A new constructor overload
+  `CacheService(memoryCache, distributedCache, coalesceConcurrentMisses: true)` serialises those concurrent
+  misses behind a per-key gate so the factory runs **at most once per key per node** (the other callers await
+  and return the winner's value), useful when the factory is expensive and contention is likely. Off by
+  default (behaviour and performance unchanged unless enabled); the `ICacheService`/`GetOrCreateAsync` surface
+  is unchanged (additive constructor only). The gate is per-instance and per-node — it does not coordinate
+  across processes — and is ref-counted so an unbounded key space does not leak semaphores. Opt in by
+  registering `CacheService` with the flag before `AddD4npUtil` (the documented override path). Accrues toward
+  the next MINOR.
 - The clock now bridges to the BCL `System.TimeProvider` (#97, ADR-0036). `AddD4npUtil` registers
   `TimeProvider.System`, and the default `DateTimeProvider` takes an optional `TimeProvider`
   (`DateTimeProvider(TimeProvider? = null)`, falling back to `TimeProvider.System`) and computes `UtcNow`
