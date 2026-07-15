@@ -96,6 +96,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- `Result<TValue>` is now `sealed` (#95). Its only constructor is `internal`, so no consumer could ever
+  derive from it — the type was de-facto sealed; declaring it so documents that reality and matches every
+  other concrete public type (`Error`, `PaginatedList`, …). The base non-generic `Result` keeps its
+  `protected` constructor as the deliberate extension point. **Non-breaking** — derivation was never
+  possible.
 - The Roslyn analyzer gate is now real for the shipped library (#77, ADR-0032). It advertised
   "analyzers … (warnings as errors) clean" but ran only the default CA subset with all `.editorconfig`
   severities at `suggestion` and no `EnforceCodeStyleInBuild`, so `-warnaserror` promoted almost nothing.

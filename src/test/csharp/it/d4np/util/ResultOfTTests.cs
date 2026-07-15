@@ -69,4 +69,12 @@ public class ResultOfTTests
         string? nullValue = null;
         Assert.Throws<ArgumentNullException>(() => _ = (Result<string>)nullValue!);
     }
+
+    [Fact]
+    public void Result_of_T_is_sealed()
+    {
+        // #95: the only constructor is internal, so derivation was never possible; the type is sealed to
+        // document that (matching every other concrete public type). Guards against accidentally un-sealing.
+        Assert.True(typeof(Result<>).IsSealed);
+    }
 }
