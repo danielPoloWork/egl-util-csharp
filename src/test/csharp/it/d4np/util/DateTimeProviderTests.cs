@@ -23,4 +23,21 @@ public class DateTimeProviderTests
             (value - systemNow).Duration() < TimeSpan.FromMinutes(1),
             $"provider.UtcNow ({value:O}) is not within a minute of the system UTC clock ({systemNow:O}).");
     }
+
+    [Fact]
+    public void Delegates_to_the_injected_TimeProvider()
+    {
+        // #97: DateTimeProvider is a facade over TimeProvider — its UtcNow is the injected clock's time,
+        // in UTC. A controllable TimeProvider makes this deterministic (no FakeTimeProvider dependency).
+        var fixedUtc = new DateTimeOffset(2026, 7, 15, 8, 30, 0, TimeSpan.Zero);
+        IDateTimeProvider provider = new DateTimeProvider(new FixedTimeProvider(fixedUtc));
+
+        Assert.Equal(fixedUtc.UtcDateTime, provider.UtcNow);
+        Assert.Equal(DateTimeKind.Utc, provider.UtcNow.Kind);
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
+    }
 }

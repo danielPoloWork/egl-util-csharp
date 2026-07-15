@@ -5,6 +5,13 @@ namespace It.D4np.Util.Application;
 /// contract rather than <see cref="DateTime.UtcNow"/> directly, so time is deterministic and
 /// controllable in tests (substitute a fake) and event timestamps are reproducible.
 /// </summary>
+/// <remarks>
+/// On .NET 8+ this is a thin facade over the BCL's <see cref="System.TimeProvider"/>: the default
+/// implementation delegates to an injected <see cref="System.TimeProvider"/> (and <c>AddD4npUtil</c>
+/// registers <see cref="System.TimeProvider.System"/>). For new code that needs more than UtcNow —
+/// <see cref="System.DateTimeOffset"/>, high-resolution timestamps, or timers — prefer injecting
+/// <see cref="System.TimeProvider"/> directly (with <c>FakeTimeProvider</c> in tests).
+/// </remarks>
 public interface IDateTimeProvider
 {
     /// <summary>

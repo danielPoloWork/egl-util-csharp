@@ -195,6 +195,17 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public async Task Registers_the_BCL_TimeProvider()
+    {
+        // #97: AddD4npUtil registers TimeProvider.System so consumers can inject TimeProvider directly, and
+        // the default DateTimeProvider delegates to that same instance.
+        await using ServiceProvider provider = BuildProvider();
+
+        Assert.Same(TimeProvider.System, provider.GetRequiredService<TimeProvider>());
+        Assert.IsType<DateTimeProvider>(provider.GetRequiredService<IDateTimeProvider>());
+    }
+
+    [Fact]
     public async Task Core_services_are_singletons()
     {
         await using ServiceProvider provider = BuildProvider();
