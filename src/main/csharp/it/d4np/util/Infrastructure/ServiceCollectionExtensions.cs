@@ -114,17 +114,24 @@ public static class ServiceCollectionExtensions
         // arguments (Specification<TEntity> sets its criteria via the constructor), so a DI registration
         // cannot supply those parameters and a parameterized spec breaks ValidateOnBuild (#67). Consumers
         // new up a specification where they use it.
-        RegisterImplementations(services, typeof(IEventHandler<>), toScan);
+
+        // Record the scanned handler types in a registry (accumulated across calls, registered once) so the
+        // broker can reconstruct handlers one at a time — isolating a construction failure from its healthy
+        // siblings — when the container's eager IEnumerable<IEventHandler<T>> resolution throws on one
+        // handler's constructor (#89, ADR-0038).
+        EventHandlerRegistry handlerRegistry = GetOrAddEventHandlerRegistry(services);
+        RegisterImplementations(services, typeof(IEventHandler<>), toScan, handlerRegistry);
 
         return services;
     }
 
-    // Registers every concrete type in the assemblies that closes the given open-generic interface,
-    // as a transient mapping from the closed interface to the implementation. Open-generic type
-    // definitions are skipped: DI cannot construct them, so registering one would abort the whole
+    // Registers every concrete type in the assemblies that closes the given open-generic interface, as a
+    // transient mapping from the closed interface to the implementation, and records the same pair in
+    // <paramref name="registry"/> (for the broker's per-handler construction fallback, #89). Open-generic
+    // type definitions are skipped: DI cannot construct them, so registering one would abort the whole
     // container build (see below).
     private static void RegisterImplementations(
-        IServiceCollection services, Type openGenericInterface, IEnumerable<Assembly> assemblies)
+        IServiceCollection services, Type openGenericInterface, IEnumerable<Assembly> assemblies, EventHandlerRegistry registry)
     {
         foreach (Type type in assemblies.SelectMany(GetLoadableTypes))
         {
@@ -143,9 +150,32 @@ public static class ServiceCollectionExtensions
                 if (@interface.IsGenericType && @interface.GetGenericTypeDefinition() == openGenericInterface)
                 {
                     services.TryAddEnumerable(ServiceDescriptor.Transient(@interface, type));
+
+                    // Mirror the registration into the registry so the broker can reconstruct this handler
+                    // individually if the eager IEnumerable resolution fails on a sibling's ctor (#89).
+                    registry.Add(@interface, type);
                 }
             }
         }
+    }
+
+    // Returns the EventHandlerRegistry already registered in the collection, or creates and registers a new
+    // one. Idempotent across repeated AddD4npUtil calls: the single registry instance accumulates every
+    // call's scanned handler types (the descriptor is added once; later calls merge into the same instance).
+    private static EventHandlerRegistry GetOrAddEventHandlerRegistry(IServiceCollection services)
+    {
+        foreach (ServiceDescriptor descriptor in services)
+        {
+            if (descriptor.ServiceType == typeof(EventHandlerRegistry)
+                && descriptor.ImplementationInstance is EventHandlerRegistry existing)
+            {
+                return existing;
+            }
+        }
+
+        var registry = new EventHandlerRegistry();
+        services.AddSingleton(registry);
+        return registry;
     }
 
     // Tolerates assemblies with a few unloadable types rather than failing the whole scan.

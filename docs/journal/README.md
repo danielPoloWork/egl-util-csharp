@@ -17,6 +17,7 @@ At the close of a state-changing session, the agent:
 
 _(newest first)_
 
+- [2026-07-15 — Fix: isolate event-handler construction failures in the broker (#89)](2026/07/2026-07-15-fix-eventbroker-construction-isolation.md)
 - [2026-07-15 — Docs: DomainEvents live-view + cache promotion-TTL (~2×ttl) caveats (#87, #93)](2026/07/2026-07-15-docs-domainevents-view-and-cache-ttl-caveats.md)
 - [2026-07-15 — Docs: correct the frozen spec's Result/Error layer + consumer import namespaces (#78, #79)](2026/07/2026-07-15-docs-spec-import-ns-and-result-layer.md)
 - [2026-07-15 — Refactor: split the MediatR/FluentValidation blocks into the opt-in It.D4np.Util.MediatR package (#38) — breaking (2.0)](2026/07/2026-07-15-refactor-split-mediatr-package.md)

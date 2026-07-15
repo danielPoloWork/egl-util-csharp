@@ -245,6 +245,19 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `EventBroker` now isolates a handler's **construction** failure, not only its execution failure (#89,
+  ADR-0038). The broker resolves `IEnumerable<IEventHandler<T>>` from the per-event scope, and MS.DI
+  materializes that enumerable eagerly — so one handler whose constructor (or injected dependency) threw
+  aborted the whole resolution before any handler ran, and the event was dropped for **every** handler of
+  that type, including healthy siblings — contradicting the documented "one faulty handler never stops
+  delivery." Dispatch now keeps the eager resolution on the happy path (so every registered handler still
+  runs when none fail construction) and, when that resolution throws, falls back to constructing each scanned
+  handler individually so the faulty one is isolated and its siblings still receive the event; the failure is
+  reported through the `It.D4np.Util.EventBroker` `EventSource` and the logger. **Behavior change:** a healthy
+  sibling previously dropped when a co-registered handler failed to construct now receives the event (weigh as
+  at least a MINOR). No public-API change (a new internal handler-type registry, populated by `AddD4npUtil`;
+  the broker constructor is unchanged); handlers registered outside `AddD4npUtil`'s scan keep the prior
+  all-or-nothing behavior for their group, and handler constructors should be side-effect-free.
 - The symbol package (`.snupkg`) is now genuinely debuggable: SourceLink + all three assemblies' PDBs
   (#36, #66). The package set `IncludeSymbols`/`SymbolPackageFormat=snupkg` but shipped **no** SourceLink
   metadata (a consumer stepping in with symbol servers got symbols with no source URL, so no source was
