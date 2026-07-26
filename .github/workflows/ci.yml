@@ -36,10 +36,10 @@ jobs:
           - { os: macos-14, toolchain: dotnet8, preset: release }
     steps:
       - name: Check out the source tree
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with: { dotnet-version: '8.0.x' }
 
       - name: Build
@@ -66,7 +66,7 @@ jobs:
     steps:
       # Default shallow checkout: the consistency lint reads files only — the i18n check is
       # content-digest based (squash-merge-safe) and no check touches git history (#96).
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Assert every project commits a packages.lock.json
         shell: bash
         run: |
@@ -88,7 +88,7 @@ jobs:
             exit 1
           fi
           echo "OK: every tracked .csproj has a committed packages.lock.json."
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
       - name: Run the consistency lint
@@ -105,8 +105,8 @@ jobs:
     # required-check feedback on a main push (#75).
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with: { dotnet-version: '8.0.x' }
       - run: dotnet format --verify-no-changes
       - run: dotnet build -warnaserror
@@ -131,8 +131,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with: { dotnet-version: '8.0.x' }
       - name: Pack both packages and assert bundling + split isolation
         shell: bash
